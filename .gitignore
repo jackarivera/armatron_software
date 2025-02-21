@@ -1,0 +1,20 @@
+
+# C++ build artifacts
+build/
+*.o
+*.so
+*.a
+*.swp
+*.out
+*.log
+
+# Node modules
+web/server/node_modules/
+web/client/node_modules/
+
+# OS or editor files
+.DS_Store
+*.tmp
+*.bak
+
+
