@@ -1,19 +1,23 @@
 cmake_minimum_required(VERSION 3.10)
-project(armatron_controls)
+project(armatron_software)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# If using RT libraries or POSIX calls:
-# find_package(Threads REQUIRED)
+# Include directories
+include_directories(include)
 
 # Source files
-file(GLOB CONTROLS_SOURCES
-    "src/*.cpp"
-    "main.cpp"
+set(SOURCES
+    src/can_handler.cpp
+    src/motor_interface.cpp
+    src/robot_interface.cpp
+    src/main.cpp
 )
 
-add_executable(armatron_controls ${CONTROLS_SOURCES})
-target_include_directories(armatron_controls PRIVATE include)
+# Executable
+add_executable(armatron_software ${SOURCES})
 
-# Link any libraries you need:
-# target_link_libraries(armatron_controls PRIVATE Threads::Threads rt)
+# Libraries
+find_package(Threads REQUIRED)
+target_link_libraries(armatron_software Threads::Threads)
+target_link_libraries(armatron_software rt)
