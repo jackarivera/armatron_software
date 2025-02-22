@@ -5,26 +5,25 @@
 #include <vector>
 
 /**
- * @brief A global RobotInterface that creates and owns 7 motors.
- *        Provides an update() method to read states and send commands each cycle.
+ * @brief RobotInterface manages multiple MG motors.
+ *        It can easily scale from 1 to 7 or more joints.
  */
 class RobotInterface
 {
 public:
     /**
-     * @brief Constructor
-     * @param canHandler A shared or reference to your already-initialized CANHandler
+     * @param canRef A reference to an already-initialized CANHandler
+     * @param numMotors number of motors in your system, default 7
      */
-    RobotInterface(CANHandler& canHandler);
+    RobotInterface(CANHandler& canRef);
 
     /**
-     * @brief Retrieve reference to a specific motor [0..6].
+     * @brief Get a reference to motor i [1..numMotors].
      */
-    Motor& getMotor(int jointIndex);
+    Motor& getMotor(int i);
 
     /**
-     * @brief Call once per control cycle. 
-     *        Reads each motor’s state, checks for errors, and sends commands as needed.
+     * @brief Example update: read each motor's state for logging or safety checks.
      */
     void updateAll();
 

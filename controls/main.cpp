@@ -2,54 +2,60 @@
 #include "motor_interface.hpp"
 #include "robot_interface.hpp"
 #include <iostream>
-#include <memory>
-#include <thread>
 #include <chrono>
+#include <thread>
 
 int main()
 {
     try {
-        // Create CAN handler on interface 'can0'
+        // 1) Bring up can0 externally: 
+        //    sudo ip link set can0 type can bitrate 500000
+        //    sudo ip link set can0 up
+
+        // 2) Create CAN interface
+        std::cerr << "Before creating CANHandler...\n";
         CANHandler can("can0");
+        std::cerr << "After creating CANHandler.\n";
 
-        // Create global RobotInterface with 7 motors
+        // 3) Create a RobotInterface for 7 motors
+        std::cerr << "Before creating robot...\n";
         RobotInterface robot(can);
+        std::cerr << "After creating robot...\n";
 
-        // Example: Configure motor #1 to be in torque mode
+        // 4) Let's just test motor #1 for now
+        std::cerr << "Before getMotor...\n";
         auto& motor1 = robot.getMotor(1);
-        motor1.setControlMode(ControlMode::Torque);
-        motor1.setDesiredTorque(5.0); // 5 N·m
+        std::cerr << "After getMotor...\n";
 
-        // Example: motor #2 in velocity mode
-        auto& motor2 = robot.getMotor(2);
-        motor2.setControlMode(ControlMode::Velocity);
-        motor2.setDesiredVelocity(3.14); // ~1 rotation/s ( rad/s )
+        // Turn motor on
+        std::cerr << "Before motorOn...\n";
+        motor1.motorOn();
+        std::cerr << "After motorOn...\n";
 
-        // Example: motor #3 in position mode
-        auto& motor3 = robot.getMotor(3);
-        motor3.setControlMode(ControlMode::Position);
-        motor3.setDesiredPosition(1.57); // ~90 deg
+        // Wait a moment
+        //std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-        // We'll do a simple loop simulating a control cycle
-        for (int cycle = 0; cycle < 10; ++cycle)
-        {
-            robot.updateAll(); // read state from each motor, handle errors, send commands
-            std::this_thread::sleep_for(std::chrono::milliseconds(10)); // 100 Hz
+        // Possibly do a torque command 
+        // Let's set torque = 500 in raw units => ~ ~4A 
+        // motor1.setTorque(500);
+
+        // Read the state to see if we got a response
+        while(true){
+        motor1.readState2();
+        const auto st = motor1.getState();
+
+        std::cerr << "[Main] Motor1 => Temp=" << st.temperatureC 
+                  << "C, TorqueCurrent=" << st.torqueCurrentA
+                  << "A, Speed=" << st.speedDeg_s << " deg/s\n";
         }
 
-        // Suppose we shut down motors
-        for (int i = 1; i <= 7; ++i) {
-            robot.getMotor(i).clearErrors();
-            robot.getMotor(i).setControlMode(ControlMode::Torque);
-            robot.getMotor(i).setDesiredTorque(0.0);
-            // one last update to ensure torque=0
-        }
-        robot.updateAll();
+        // Turn off
+        motor1.motorOff();
 
-        std::cout << "Exiting main.\n";
+        std::cout << "[Main] Done.\n";
     }
-    catch (const std::exception& ex) {
-        std::cerr << "Exception in main: " << ex.what() << std::endl;
+    catch(const std::exception &ex) {
+        std::cerr << "[Main] Exception: " << ex.what() << std::endl;
         return 1;
     }
     return 0;

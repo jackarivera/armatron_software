@@ -11,7 +11,7 @@ set(SOURCES
     src/can_handler.cpp
     src/motor_interface.cpp
     src/robot_interface.cpp
-    src/main.cpp
+    main.cpp
 )
 
 # Executable

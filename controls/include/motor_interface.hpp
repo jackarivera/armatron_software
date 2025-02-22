@@ -7,168 +7,208 @@
 #include <string>
 
 /**
- * @brief Control modes for the motor.
- */
-enum class ControlMode
-{
-    Torque,   // Control torque in N·m
-    Velocity, // Control velocity in rad/s
-    Position  // Control position in radians (single-loop angle implementation)
-};
-
-/**
- * @brief PID Parameters of the motor.
- */
- struct PIDParameters
- {
-    uint8_t pos_kp;
-    uint8_t pos_ki;
-    uint8_t vel_kp;
-    uint8_t vel_ki;
-    uint8_t torque_kp;
-    uint8_t torque_ki;
- };
-
-/**
- * @brief Struct to hold the real-time state of a motor.
- *        For safety reasons, we store error flags, temperature, etc.
+ * @brief Holds the latest known motor data for safety & logging.
+ *        Updated whenever we read from the motor.
  */
 struct MotorState
 {
-    double positionRad   = 0.0;   ///< Estimated position in radians
-    double velocityRad_s = 0.0;   ///< Estimated velocity in rad/s
-    double torqueNm      = 0.0;   ///< Estimated output torque in N·m
-    double temperatureC  = 0.0;   ///< Motor temperature in °C
-    double busVoltage    = 0.0;   ///< Motor bus voltage (optional read)
-    bool   errorPresent  = false; ///< True if an error is flagged
-    int    errorCode     = 0;     ///< Some code/bitmask
+    double temperatureC    = 0.0;
+    double busVoltage      = 0.0;
+    double torqueCurrentA  = 0.0; ///< Actual current (like IQ)
+    double speedDeg_s      = 0.0; ///< Speed in deg/s
+    double positionDeg     = 0.0; ///< Single or multi-turn angle in degrees
+    bool   errorPresent    = false;
+    uint8_t errorCode      = 0;
 };
 
 /**
- * @brief A MotorInterface that uses a CANHandler and MG Motor CANbus style protocol internally.
+ * @brief A class implementing all commands from MG motor doc V2.35:
+ *        - 0x80..0x81..0x88 for on/off/stop
+ *        - 0xA0..0xA8 for open loop, torque, speed, angle
+ *        - 0x30..0x34 for PID & accel
+ *        - 0x90..0x95 for encoder, angle
+ *        - 0x9A..0x9D for states & errors
  */
 class Motor
 {
 public:
     /**
-     * @param motor_id   The assigned ID on the CAN bus (1..7).
-     * @param canHandler Reference to an instantiated CANHandler.
-     * @param gear_ratio Gear ratio-> Motor:Reducer (i.e. 9:1)
-     * @param torque_constant Torque Consant in Nm/A
+     * @param motorId  The motor's assigned ID on the bus (1..32)
+     * @param canRef   Reference to a CANHandler. 
+     * @param reduction_ratio Motor reduction ratio (reduction_ratio:1)
+     * @param max_torque Max torque of each motor in Nm
      */
-    Motor(uint8_t motor_id, CANHandler& canHandler, float gear_ratio = 1.0f, float torque_constant = 1.0f);
+    Motor(uint8_t motorId, CANHandler& canRef, float reduction_ratio, float max_torque);
 
     /**
-     * @brief Set the control mode (Torque, Velocity, Position).
+     * @brief Retrieve the last known motor state (populated from read ops).
      */
-    void setControlMode(ControlMode mode);
+    const MotorState& getState() const;
 
     /**
-     * @brief Set a torque command in N·m (SI units).
-     *        This value is used if controlMode == Torque.
+     * @brief Turn motor OFF (0x80), clearing any prior commands.
      */
-    void setDesiredTorque(double torqueNm);
+    void motorOff();
 
     /**
-     * @brief Set a velocity command in rad/s (SI units).
-     *        This value is used if controlMode == Velocity.
+     * @brief Turn motor ON (0x88).
      */
-    void setDesiredVelocity(double velRad_s);
+    void motorOn();
 
     /**
-     * @brief Set a position command in radians (SI units).
-     *        This value is used if controlMode == Position.
+     * @brief Motor Stop (0x81). Does not clear state, can be resumed.
      */
-    void setDesiredPosition(double posRad);
+    void motorStop();
 
     /**
-     * @brief Called each control cycle to:
-     *        1) Read the motor state from the hardware (via CAN).
-     *        2) If no error, send the relevant command (torque/vel/pos) else handle error 
+     * @brief Open-loop control (0xA0) - only valid for MS-series, but doc shows it in MF/MG too.
+     *        Range: -850..850. 
      */
-    void update();
+    void openLoopControl(int16_t powerControl);
 
     /**
-     * @brief Sets the PID parameters of the motor. Writes to RAM
+     * @brief Torque closed-loop (0xA1). Range -2048..2048 => ~ +/- 16.5A on MG 
      */
-     void writePIDParametersRAM();
+    void setTorque(int16_t iqControl);
 
     /**
-    * @brief Sets the PID parameters of the motor. Writes to ROM (Permanently set after power shutdown)
-    */
-    void writePIDParametersROM();
-    
-    /**
-     * @brief Reads the PID parameters of the motor by sending a 0x30 command
+     * @brief Speed closed-loop (0xA2). 4-byte speed in 0.01 deg/s. 
+     *        We'll accept an integer speed in 0.01 deg/s for convenience.
      */
-     void readPIDParameters();
+    void setSpeed(int32_t speedControl);
 
     /**
-     * @brief Returns the last known motor state.
+     * @brief Multi-loop angle control 1 (0xA3). 4-byte angle in 0.01 deg.
      */
-    const MotorState& getState() const { return m_state; }
+    void setMultiAngle(int32_t angleControl);
 
     /**
-     * @brief Returns the motor ID.
+     * @brief Multi-loop angle control 2 (0xA4). angle + speed limit
      */
-     const uint8_t getID() const { return m_motor_id; }
+    void setMultiAngleWithSpeed(int32_t angle, uint16_t maxSpeed);
 
     /**
-     * @brief Returns the motor gear ratio.
+     * @brief Single-loop angle control 1 (0xA5). 
+     *        spinDirection=0 => CW, 1 => CCW
      */
-     const uint8_t getGearRatio() const { return m_gear_ratio; }
+    void setSingleAngle(uint8_t spinDirection, uint16_t angle);
 
     /**
-     * @brief Returns the motor torque constant.
+     * @brief Single-loop angle control 2 (0xA6). angle + speed limit
      */
-     const uint8_t getTorqueConstant() const { return m_torque_constant; }
+    void setSingleAngleWithSpeed(uint8_t spinDirection, uint16_t angle, uint16_t maxSpeed);
 
     /**
-     * @brief Clears any error on the motor side (if recoverable).
+     * @brief Increment angle control 1 (0xA7). 4-byte increment in 0.01 deg
      */
-    void clearErrors();
+    void setIncrementAngle(int32_t incAngle);
+
+    /**
+     * @brief Increment angle control 2 (0xA8). incAngle + maxSpeed
+     */
+    void setIncrementAngleWithSpeed(int32_t incAngle, uint16_t maxSpeed);
+
+    /**
+     * @brief Read PID (0x30). Returns array of 6 param bytes: [AngKp,AngKi,SpdKp,SpdKi,TrqKp,TrqKi]
+     */
+    std::vector<uint8_t> readPID();
+
+    /**
+     * @brief Write PID to RAM (0x31). Not persistent after power-off.
+     */
+    void writePID_RAM(uint8_t angKp, uint8_t angKi, uint8_t spdKp, uint8_t spdKi, uint8_t iqKp, uint8_t iqKi);
+
+    /**
+     * @brief Write PID to ROM (0x32). Persists after power cycle.
+     */
+    void writePID_ROM(uint8_t angKp, uint8_t angKi, uint8_t spdKp, uint8_t spdKi, uint8_t iqKp, uint8_t iqKi);
+
+    /**
+     * @brief Read acceleration (0x33). 4-byte in 1 dps^2 
+     */
+    int32_t readAcceleration();
+
+    /**
+     * @brief Write acceleration to RAM (0x34). 
+     */
+    void writeAcceleration(int32_t accel);
+
+    /**
+     * @brief Read encoder (0x90). Fills motorState with (encoder, rawEncoder, offset).
+     */
+    void readEncoder();
+
+    /**
+     * @brief Write encoder offset to ROM (0x91). 14-bit offset, e.g. 0..16383 for MF. 
+     */
+    void writeEncoderOffset(uint16_t offset);
+
+    /**
+     * @brief Write current pos to ROM as zero (0x19). Takes effect after reset. 
+     *        The doc says multiple writes can degrade chip life. Use sparingly.
+     */
+    void writeCurrentPosAsZero();
+
+    /**
+     * @brief Read multi-turn angle (0x92). 64-bit in 0.01 deg -> fill in state.
+     */
+    void readMultiAngle();
+
+    /**
+     * @brief Read single-turn angle (0x94). 32-bit in 0.01 deg -> fill in state.
+     */
+    void readSingleAngle();
+
+    /**
+     * @brief Clear motor angle (0x95). Clears multi & single turn data in RAM.
+     */
+    void clearAngle();
+
+    /**
+     * @brief Read motor state 1 & error (0x9A). Fills temp, voltage, error.
+     */
+    void readState1_Error();
+
+    /**
+     * @brief Clear motor error (0x9B).
+     */
+    void clearError();
+
+    /**
+     * @brief Read motor state 2 (0x9C). Fills temp, torque current, speed, encoder pos.
+     */
+    void readState2();
+
+    /**
+     * @brief Read motor state 3 (0x9D). Fills temp & phase currents (A/B/C).
+     */
+    void readState3();
 
 private:
-    uint8_t     m_motor_id;
-    float       m_gear_ratio;
-    float       m_torque_constant;
-    CANHandler& m_can;
-    ControlMode m_mode;
-
-    // Desired setpoints (SI)
-    double m_desiredTorqueNm    = 0.0;
-    double m_desiredVelocityRad = 0.0;
-    double m_desiredPositionRad = 0.0;
-
-    // The real-time motor state.
+    uint8_t    m_motorId;
+    CANHandler &m_can;
     MotorState m_state;
+    float m_reduction_ratio  = 0.0;
+    float m_max_torque       = 0.0;
+    float m_rated_torque     = 0.0;
+    float m_torque_constant  = 0.0;
 
     /**
-     * @brief Perform a CAN read to update m_state.
-     *        Skeleton example; actual parsing should decode frame data.
+     * @brief Helper: Single motor ID = 0x140 + m_motorId
      */
-    void readStateFromMotor();
+    int canID() const { return (0x140 + m_motorId); }
 
     /**
-     * @brief Send the commanded torque via the CAN protocol.
-     *        Here, we do a simplistic mapping from N·m -> [protocol units].
+     * @brief Low-level send
      */
-    void sendTorqueCommand(double nm);
+    bool sendCmd(uint8_t command, const std::vector<uint8_t>& data = {});
 
     /**
-     * @brief Send the commanded velocity in rad/s -> motor protocol units.
+     * @brief Low-level receive & parse. For each command, we parse the 
+     *        doc-defined response. Updates m_state. 
+     *        This is done once per command in a blocking or single-shot approach.
      */
-    void sendVelocityCommand(double rad_s);
-
-    /**
-     * @brief Send the commanded position in radians -> motor protocol units.
-     */
-    void sendPositionCommand(double rad);
-
-    /**
-     * @brief Low-level function to send a raw command & data to this motor's ID.
-     */
-    void sendCmd(uint8_t command, const std::vector<uint8_t>& data = {});
+    void readFrameForCommand(uint8_t expectedCmd);
 };
 
 #endif // MOTOR_INTERFACE_HPP
