@@ -9,8 +9,7 @@ build/
 *.log
 
 # Node modules
-web/server/node_modules/
-web/client/node_modules/
+web/node_modules/
 
 # OS or editor files
 .DS_Store

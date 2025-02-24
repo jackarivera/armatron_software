@@ -1,23 +1,39 @@
 cmake_minimum_required(VERSION 3.10)
-project(armatron_software)
+project(armatron_controls)
 
 set(CMAKE_CXX_STANDARD 17)
 
-# Include directories
+# Include headers
 include_directories(include)
 
-# Source files
-set(SOURCES
+# Core source files shared by both executables
+set(CORE_SOURCES
     src/can_handler.cpp
     src/motor_interface.cpp
     src/robot_interface.cpp
-    main.cpp
+    src/real_time_daemon.cpp
 )
 
-# Executable
-add_executable(armatron_software ${SOURCES})
+# ============ Debug Executable ============
 
-# Libraries
+add_executable(armatron_debug
+    main_debug.cpp
+    ${CORE_SOURCES}
+)
+
 find_package(Threads REQUIRED)
-target_link_libraries(armatron_software Threads::Threads)
-target_link_libraries(armatron_software rt)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(JSONCPP jsoncpp)
+
+target_link_libraries(armatron_debug Threads::Threads rt ${JSONCPP_LIBRARIES})
+
+# ============ Real-Time Daemon ============
+
+add_executable(realtime_daemon
+    main_realtime.cpp
+    ${CORE_SOURCES}
+)
+
+
+target_link_libraries(realtime_daemon Threads::Threads rt ${JSONCPP_LIBRARIES})

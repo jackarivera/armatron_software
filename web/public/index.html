@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>Robot Motor Tuning</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Motor #1 Control</h1>
+  <button onclick="sendCmd({cmd:'motorOn', motorID:1})">Motor ON</button>
+  <button onclick="sendCmd({cmd:'motorOff', motorID:1})">Motor OFF</button>
+  <button onclick="sendCmd({cmd:'motorStop', motorID:1})">Motor STOP</button>
+  <br/><br/>
+  <label>Torque (raw):</label> <input id="torqueVal" type="number" value="500"/>
+  <button onclick="applyTorque()">Set Torque</button>
+  <br/><br/>
+
+  <h2>PID Gains</h2>
+  <label>Angle Kp:</label> <input id="angKp" type="number" value="100"/> 
+  <label>Angle Ki:</label> <input id="angKi" type="number" value="50"/>
+  <label>Speed Kp:</label> <input id="spdKp" type="number" value="50"/> 
+  <label>Speed Ki:</label> <input id="spdKi" type="number" value="20"/> 
+  <label>IQ Kp:</label> <input id="iqKp" type="number" value="50"/> 
+  <label>IQ Ki:</label> <input id="iqKi" type="number" value="50"/>
+  <button onclick="writePID()">WritePID</button>
+  <br/><br/>
+
+  <h2>Position Tuning</h2>
+  <label>Target (raw 0.01 deg):</label>
+  <input id="posVal" type="number" value="36000"/>
+  <button onclick="setPosition()">Set Position</button>
+
+  <h2>Motor Data</h2>
+  <div>Temperature: <span id="temp"></span></div>
+  <div>Torque(A):   <span id="torque"></span></div>
+  <div>Speed(deg/s):<span id="speed"></span></div>
+  <div>Pos(deg):    <span id="pos"></span></div>
+
+  <canvas id="myChart" width="400" height="200"></canvas>
+  <button onclick="togglePause()">Pause/Resume</button>
+
+  <script>
+    let socket = io();
+    let paused = false;
+
+    // Chart.js for rolling data
+    let ctx = document.getElementById('myChart').getContext('2d');
+    let chartData = {
+      labels: [], // time
+      datasets: [
+        {
+          label: 'Position (deg)',
+          data: [],
+          borderColor: 'blue',
+          fill: false,
+        },
+        {
+          label: 'Speed (deg/s)',
+          data: [],
+          borderColor: 'red',
+          fill: false,
+        }
+      ]
+    };
+    let myChart = new Chart(ctx, {
+      type: 'line',
+      data: chartData,
+      options: {
+        animation: false,
+        scales: { x: {display: false} }
+      }
+    });
+
+    function togglePause(){
+      paused = !paused;
+    }
+
+    socket.on('motorStates', (msg)=>{
+      // msg.motors["1"] => { temp, torqueA, speedDeg_s, posDeg, error }
+      let m = msg.motors["1"];
+      if(!m) return;
+      document.getElementById('temp').innerText   = m.temp.toFixed(1);
+      document.getElementById('torque').innerText = m.torqueA.toFixed(2);
+      document.getElementById('speed').innerText  = m.speedDeg_s.toFixed(2);
+      document.getElementById('pos').innerText    = m.posDeg.toFixed(2);
+
+      if(!paused){
+        let now = new Date().toLocaleTimeString();
+        chartData.labels.push(now);
+        chartData.datasets[0].data.push(m.posDeg);
+        chartData.datasets[1].data.push(m.speedDeg_s);
+
+        if(chartData.labels.length > 100){
+          chartData.labels.shift();
+          chartData.datasets.forEach(ds=>ds.data.shift());
+        }
+        myChart.update();
+      }
+    });
+
+    function sendCmd(obj){
+      socket.emit('sendCommand', obj);
+    }
+
+    function applyTorque(){
+      let val = parseInt(document.getElementById('torqueVal').value);
+      sendCmd({ cmd:'setTorque', motorID:1, value: val });
+    }
+    function writePID(){
+      let akp = parseInt(document.getElementById('angKp').value);
+      let aki = parseInt(document.getElementById('angKi').value);
+      let skp = parseInt(document.getElementById('spdKp').value);
+      let ski = parseInt(document.getElementById('spdKi').value);
+      let tkp = parseInt(document.getElementById('iqKp').value);
+      let tki = parseInt(document.getElementById('iqKi').value);
+      sendCmd({ cmd:'setPID', motorID:1, angKp: akp, angKi: aki, spdKp: skp, spdKi: ski, iqKp: tkp, iqKi: tki });
+    }
+    function setPosition(){
+      let pos = parseInt(document.getElementById('posVal').value);
+      sendCmd({ cmd:'setPosition', motorID:1, value:pos });
+    }
+
+  </script>
+</body>
+</html>
