@@ -28,21 +28,22 @@ function connectToDaemon() {
   client.on('data', (data) => {
     buffer += data.toString();
     let lines = buffer.split('\n');
-    buffer = lines.pop(); // keep partial message
-    lines.forEach(line => {
-      if(line.trim().length > 0) {
-        try {
-          let msg = JSON.parse(line);
-          if(DEBUG) {
-            console.log("[Node] Received message:", msg);
-          }
-          // Expecting message type 'motorStates'
-          if(msg.type === 'motorStates'){
-            io.emit('motorStates', msg);
-          }
-        } catch(e) {
-          console.error("[Node] JSON parse error:", e);
+    buffer = lines.pop(); // the last part may be partial
+    lines.forEach((line) => {
+      line = line.trim();
+      if (line.length === 0) return;
+      // Basic validation: check that the line starts with '{' and ends with '}'
+      if (line[0] !== '{' || line[line.length - 1] !== '}') {
+        console.error("[Node] Received invalid JSON line, skipping:", line);
+        return;
+      }
+      try {
+        let msg = JSON.parse(line);
+        if (msg.type === 'motorStates') {
+          io.emit('motorStates', msg);
         }
+      } catch (e) {
+        console.error("[Node] parse error: ", e);
       }
     });
   });

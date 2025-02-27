@@ -7,6 +7,7 @@
 #include <atomic>
 #include <mutex>
 #include <queue>
+#include <vector>
 
 /**
  * @brief A minimal message structure to pass between Node and the real-time code
@@ -60,7 +61,12 @@ private:
     std::mutex m_outboundMutex;
     std::queue<IPCMessage> m_outboundQueue;
 
+    // Client Handling
+    std::vector<int> m_clientFds;
+    std::mutex m_clientFdsMutex;
+
     void socketThreadFunc();
+    void clientHandler(int clientFd);
     void controlThreadFunc();
 
     // Helpers to parse JSON commands and update RobotInterface

@@ -9,6 +9,7 @@
 #include <sstream>
 #include <fcntl.h>
 #include <jsoncpp/json/json.h>
+#include <algorithm>
 
 #ifndef IFDEBUG
 #ifdef DEBUG
@@ -109,6 +110,15 @@ void RealTimeDaemon::stop()
         m_controlThread.join();
         IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Control thread joined.\n")
     }
+
+    // Close all connected client sockets.
+    {
+        std::lock_guard<std::mutex> lk(m_clientFdsMutex);
+        for (auto fd : m_clientFds) {
+            close(fd);
+        }
+        m_clientFds.clear();
+    }
     ::unlink(m_socketPath.c_str());
     std::cout << "[RealTimeDaemon] Stopped.\n";
 }
@@ -125,40 +135,60 @@ void RealTimeDaemon::socketThreadFunc()
             std::cerr << "[RealTimeDaemon] Accept error.\n";
             continue;
         }
-        char buf[1024];
-        std::stringstream partial;
-        while (m_running) {
-            ssize_t r = recv(clientFd, buf, sizeof(buf), 0);
-            IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Received " << r << " bytes from client FD=" << clientFd << "\n");
-            if (r <= 0) {
-                // Flush any remaining data in 'partial' if not empty
-                if (!partial.str().empty()) {
-                    std::string line = partial.str();
+        IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Accepted client FD=" << clientFd << "\n");
+
+        {
+            // Add the client FD to our list.
+            std::lock_guard<std::mutex> lk(m_clientFdsMutex);
+            m_clientFds.push_back(clientFd);
+        }
+        // Spawn a new thread to handle incoming messages from this client.
+        std::thread(&RealTimeDaemon::clientHandler, this, clientFd).detach();
+    }
+}
+
+// This method handles reading from a single client connection.
+void RealTimeDaemon::clientHandler(int clientFd)
+{
+    char buf[1024];
+    std::stringstream partial;
+    while (m_running) {
+        ssize_t r = recv(clientFd, buf, sizeof(buf), 0);
+        IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Received " << r << " bytes from client FD=" << clientFd << "\n");
+        if (r <= 0) {
+            if (!partial.str().empty()) {
+                std::string line = partial.str();
+                std::lock_guard<std::mutex> lk(m_inboundMutex);
+                m_inboundQueue.push( IPCMessage{ line } );
+                IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Flushed partial JSON: " << line << "\n");
+            }
+            break;
+        }
+        for (int i = 0; i < r; i++) {
+            if (buf[i] == '\n') {
+                std::string line = partial.str();
+                partial.str(std::string());
+                partial.clear();
+                IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Received JSON line: " << line << "\n");
+                if (!line.empty()) {
                     std::lock_guard<std::mutex> lk(m_inboundMutex);
                     m_inboundQueue.push( IPCMessage{ line } );
-                    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Flushed partial JSON: " << line << "\n");
+                    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Pushed JSON line into queue: " << line << "\n");
                 }
-                break;
-            }
-            for (int i = 0; i < r; i++) {
-                if (buf[i] == '\n') {
-                    std::string line = partial.str();
-                    partial.str(std::string());
-                    partial.clear();
-                    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Received JSON line: " << line << "\n");
-                    if (!line.empty()) {
-                        std::lock_guard<std::mutex> lk(m_inboundMutex);
-                        m_inboundQueue.push( IPCMessage{ line } );
-                        IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Pushed JSON line into queue: " << line << "\n");
-                    }
-                } else {
-                    partial << buf[i];
-                }
+            } else {
+                partial << buf[i];
             }
         }
-        close(clientFd);
-        IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Closed client FD=" << clientFd << "\n");
     }
+    close(clientFd);
+    {
+        std::lock_guard<std::mutex> lk(m_clientFdsMutex);
+        auto it = std::find(m_clientFds.begin(), m_clientFds.end(), clientFd);
+        if (it != m_clientFds.end()) {
+            m_clientFds.erase(it);
+        }
+    }
+    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Closed client FD=" << clientFd << "\n");
 }
 
 
@@ -210,6 +240,7 @@ void RealTimeDaemon::controlThreadFunc()
             }
 
             Json::StreamWriterBuilder builder;
+            builder["indentation"] = ""; // Force compact, single-line output.
             std::string outStr = Json::writeString(builder, jroot);
             IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Broadcasting state: " << outStr << "\n")
             sendJson(outStr); 
@@ -283,7 +314,20 @@ void RealTimeDaemon::handleCommand(const std::string& jsonStr)
 /**********************************************************/
 void RealTimeDaemon::sendJson(const std::string& jsonStr)
 {
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] sendJson called with: " << jsonStr << "\n")
-    // For a multi-connection scenario, you’d store client FDs and write to them.
-    // This example does nothing, but you can expand it to actually send data.
+    // Append a newline to ensure the Node side can correctly detect message boundaries.
+    std::string jsonWithNewline = jsonStr + "\n";
+    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] sendJson called with: " << jsonWithNewline << "\n")
+    
+    // Send the JSON string to all connected clients.
+    std::lock_guard<std::mutex> lk(m_clientFdsMutex);
+    for (auto it = m_clientFds.begin(); it != m_clientFds.end(); ) {
+        ssize_t written = write(*it, jsonWithNewline.c_str(), jsonWithNewline.size());
+        if (written < 0) {
+            std::cerr << "[RealTimeDaemon] Error writing to client FD=" << *it << ". Closing connection.\n";
+            close(*it);
+            it = m_clientFds.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
