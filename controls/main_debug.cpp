@@ -9,7 +9,7 @@ int main()
 {
     try {
         // 1) Bring up can0 externally: 
-        //    sudo ip link set can0 type can bitrate 500000
+        //    sudo ip link set can0 type can bitrate 1000000
         //    sudo ip link set can0 up
 
         // 2) Create CAN interface

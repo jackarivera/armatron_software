@@ -8,69 +8,77 @@ const server  = http.createServer(app);
 const io      = socketIO(server);
 
 const SOCKET_PATH = '/tmp/robot_socket';
+const DEBUG = true;
 
 let client = null; // we'll hold a single connection to the daemon
 
 function connectToDaemon() {
-  client = net.createConnection(SOCKET_PATH, ()=>{
+  client = net.createConnection(SOCKET_PATH, () => {
     console.log("[Node] Connected to real_time_daemon via UNIX socket.");
   });
-  client.on('error', (err)=>{
-    console.error("[Node] Socket error: ", err);
+  client.on('error', (err) => {
+    console.error("[Node] Socket error:", err);
     setTimeout(connectToDaemon, 2000);
   });
-  client.on('close', ()=>{
-    console.log("[Node] Socket closed, retry in 2s...");
+  client.on('close', () => {
+    console.log("[Node] Socket closed, retrying in 2s...");
     setTimeout(connectToDaemon, 2000);
   });
   let buffer = '';
-  client.on('data', (data)=>{
+  client.on('data', (data) => {
     buffer += data.toString();
     let lines = buffer.split('\n');
-    buffer = lines.pop(); // last is partial
-    lines.forEach(line=>{
-      if(line.trim().length>0) {
-        // parse JSON
+    buffer = lines.pop(); // keep partial message
+    lines.forEach(line => {
+      if(line.trim().length > 0) {
         try {
           let msg = JSON.parse(line);
-          // e.g. { "type":"motorStates", "motors":{"1":{...}}}
+          if(DEBUG) {
+            console.log("[Node] Received message:", msg);
+          }
+          // Expecting message type 'motorStates'
           if(msg.type === 'motorStates'){
-            // broadcast to all websockets
             io.emit('motorStates', msg);
           }
-        } catch(e){
-          console.error("[Node] parse error: ", e);
+        } catch(e) {
+          console.error("[Node] JSON parse error:", e);
         }
       }
     });
   });
 }
 
-// Express static
+// Serve static files from the 'public' folder
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Example route
-app.get('/hello', (req,res)=> {
+app.get('/hello', (req, res) => {
   res.send("Hello from Node web_app!");
 });
 
 // Socket.IO events from the browser
-io.on('connection', (socket)=>{
+io.on('connection', (socket) => {
   console.log("[Node] Browser connected via socket.io");
 
-  // Browser can send commands like: {cmd:'motorOn', motorID:1}
-  socket.on('sendCommand', (msg)=>{
-    // forward to daemon
-    if(client){
+  socket.on('sendCommand', (msg) => {
+    if(DEBUG) {
+      console.log("[Node] Received command from browser:", msg);
+    }
+    // Forward command to daemon
+    if(client) {
       let line = JSON.stringify(msg) + "\n";
       client.write(line);
+      if(DEBUG) {
+        console.log("[Node] Command forwarded to daemon:", line);
+      }
+    } else {
+      console.error("[Node] No client connection available to forward command.");
     }
   });
 });
 
-// Start server
-server.listen(8888, ()=>{
-  console.log("[Node] Web server on http://<BBB_IP>:8080");
+server.listen(8888, () => {
+  console.log("[Node] Web server running on http://<BBB_IP>:8888");
 });
 
 // Connect to the daemon

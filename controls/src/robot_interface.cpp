@@ -8,17 +8,17 @@ RobotInterface::RobotInterface(CANHandler& canRef)
     // Joint 0 - MG8015 - Base Shoulder
     m_motors.emplace_back(static_cast<uint8_t>(1), canRef, MG8015_REDUCTION_RATIO, MG8015_MAX_TORQUE_NM);
     // Joint 1 - MG8015 - Mid Shoulder
-    m_motors.emplace_back(static_cast<uint8_t>(2), canRef, MG8015_REDUCTION_RATIO, MG8015_MAX_TORQUE_NM);
-    // Joint 2 - MG8008 - Brachium Shoulder
-    m_motors.emplace_back(static_cast<uint8_t>(3), canRef, MG8008_REDUCTION_RATIO, MG8008_MAX_TORQUE_NM);
-    // Joint 3 - MG8008 - Elbow Flexor
-    m_motors.emplace_back(static_cast<uint8_t>(4), canRef, MG8008_REDUCTION_RATIO, MG8008_MAX_TORQUE_NM);
-    // Joint 4 - MG4010 - Forearm Rotator
-    m_motors.emplace_back(static_cast<uint8_t>(5), canRef, MG4010_REDUCTION_RATIO, MG4010_MAX_TORQUE_NM);
-    // Joint 5 - MG4005 - Wrist Differential #1 
-    m_motors.emplace_back(static_cast<uint8_t>(6), canRef, MG4005_REDUCTION_RATIO, MG4005_MAX_TORQUE_NM);
-    // Joint 6 - MG4005 - Wrist Differential #2
-    m_motors.emplace_back(static_cast<uint8_t>(7), canRef, MG4005_REDUCTION_RATIO, MG4005_MAX_TORQUE_NM);
+    // m_motors.emplace_back(static_cast<uint8_t>(2), canRef, MG8015_REDUCTION_RATIO, MG8015_MAX_TORQUE_NM);
+    // // Joint 2 - MG8008 - Brachium Shoulder
+    // m_motors.emplace_back(static_cast<uint8_t>(3), canRef, MG8008_REDUCTION_RATIO, MG8008_MAX_TORQUE_NM);
+    // // Joint 3 - MG8008 - Elbow Flexor
+    // m_motors.emplace_back(static_cast<uint8_t>(4), canRef, MG8008_REDUCTION_RATIO, MG8008_MAX_TORQUE_NM);
+    // // Joint 4 - MG4010 - Forearm Rotator
+    // m_motors.emplace_back(static_cast<uint8_t>(5), canRef, MG4010_REDUCTION_RATIO, MG4010_MAX_TORQUE_NM);
+    // // Joint 5 - MG4005 - Wrist Differential #1 
+    // m_motors.emplace_back(static_cast<uint8_t>(6), canRef, MG4005_REDUCTION_RATIO, MG4005_MAX_TORQUE_NM);
+    // // Joint 6 - MG4005 - Wrist Differential #2
+    // m_motors.emplace_back(static_cast<uint8_t>(7), canRef, MG4005_REDUCTION_RATIO, MG4005_MAX_TORQUE_NM);
 }
 
 Motor& RobotInterface::getMotor(int i)
