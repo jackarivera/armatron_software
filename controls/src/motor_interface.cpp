@@ -188,7 +188,9 @@ std::vector<uint8_t> Motor::readPID()
     // 0x30 => read PID param
     // data => [0x30, 0,0,0,0,0,0,0] 
     sendCmd(0x30);
-    return {}; // we parse in readFrameForCommand
+    readFrameForCommand(0x30);
+    // Return a dummy vector or implement as needed.
+    return std::vector<uint8_t>();
 }
 
 void Motor::writePID_RAM(uint8_t angKp, uint8_t angKi, uint8_t spdKp, uint8_t spdKi, uint8_t iqKp, uint8_t iqKi)
@@ -340,27 +342,22 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
 {
     struct can_frame frame;
     auto start = std::chrono::steady_clock::now();
-    bool received = false;
-    if(!(std::chrono::steady_clock::now() - start < std::chrono::milliseconds(10))){
+
+    if (!(std::chrono::steady_clock::now() - start < std::chrono::milliseconds(10))) {
         std::cout << "[Motor Interface] CAN Loop Overrun (10ms - motor_interface.cpp::readFrameForCommand)\n";
     }
     while (std::chrono::steady_clock::now() - start < std::chrono::milliseconds(10)) {
         if (m_can.receiveMessage(frame)) {
-            // check if from same motor
+            // Verify frame is from the correct motor.
             if ((frame.can_id & 0x7FF) != canID()) {
-                // Not from this motor => ignore
                 return;
             }
-            // first byte: command
-            if (frame.data[0] != expectedCmd && 
-                !(expectedCmd == 0x19 && frame.data[0] == 0x19)) {
-                // Might be a diff command or error
-                // We'll do minimal check
+            // Check command byte.
+            if (frame.data[0] != expectedCmd && !(expectedCmd == 0x19 && frame.data[0] == 0x19)) {
                 return;
             }
-
-            // Now parse by command:
-            switch(frame.data[0]) {
+            // Parse response based on the command.
+            switch (frame.data[0]) {
             case 0xA0:
             case 0xA1:
             case 0xA2:
@@ -371,28 +368,25 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
             case 0xA7:
             case 0xA8:
             {
-                // doc says respond with temperature, torque(or power?), speed, encoder
-                // For MG: [cmd, temp, torqueLo, torqueHi, speedLo, speedHi, encLo, encHi]
+                // Motion control responses: [cmd, temp, torqueLo, torqueHi, speedLo, speedHi, encLo, encHi]
                 if (frame.can_dlc >= 8) {
-                    int8_t  t   = static_cast<int8_t>( frame.data[1] );
-                    int16_t iq  = unpack16(frame, 2);
+                    int8_t t   = static_cast<int8_t>(frame.data[1]);
+                    int16_t iq = unpack16(frame, 2);
                     int16_t spd = unpack16(frame, 4);
-                    uint16_t enc= static_cast<uint16_t>(
-                        (static_cast<uint16_t>(frame.data[7]) << 8) | frame.data[6]
-                    );
+                    uint16_t enc = static_cast<uint16_t>((static_cast<uint16_t>(frame.data[7]) << 8) | frame.data[6]);
                     m_state.temperatureC = t;
-                    m_state.torqueCurrentA = iq * (16.5/2048.0); // example scale
-                    m_state.speedDeg_s    = spd * 1.0;           // or spd/100.0 if doc
-                    m_state.positionDeg   = enc * (360.0/65535.0); 
-                    m_state.errorPresent  = false;
-                    m_state.errorCode     = 0;
+                    m_state.torqueCurrentA = iq; 
+                    m_state.speedDeg_s = spd * 1.0;
+                    m_state.positionDeg = enc * (360.0 / 65535.0);
+                    m_state.errorPresent = false;
+                    m_state.errorCode = 0;
                 }
                 break;
             }
             case 0x30:
             {
-                // 0x30 => read PID param => [0x30, 0, angleKp, angleKi, speedKp, speedKi, torqueKp, torqueKi]
-                // In practice, store in state or return it from readPID()
+                // Read PID parameters response: [0x30, 0, angleKp, angleKi, speedKp, speedKi, torqueKp, torqueKi]
+                // (Store or process as needed; here we simply acknowledge.)
                 break;
             }
             case 0x31:
@@ -400,106 +394,126 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
             case 0x33:
             case 0x34:
             {
-                // For writing PID or reading/writing accel, doc states it echoes the same command & data
-                // or returns some param in the last bytes. You can parse as needed.
+                // PID and acceleration commands: echo the sent command and parameters.
                 break;
             }
             case 0x90:
             {
-                // read encoder => [0x90, 0, encLo,encHi, rawLo,rawHi, offLo,offHi]
+                // Read encoder response: [0x90, 0, encLo, encHi, rawLo, rawHi, offLo, offHi]
                 if (frame.can_dlc >= 8) {
                     int16_t enc    = unpack16(frame, 2);
                     int16_t encRaw = unpack16(frame, 4);
                     int16_t off    = unpack16(frame, 6);
-                    // store if you want
-                    m_state.positionDeg  = enc * (360.0/16383.0); 
+                    m_state.positionDeg = enc * (360.0 / 16383.0); // adjust per your encoder spec
                 }
                 break;
             }
             case 0x9A:
             {
-                // read motor state1 => [0x9A, temp, 0, voltLo, voltHi, 0,0, errByte]
+                // Read Motor State1 response: [0x9A, temp, 0, voltLo, voltHi, 0, 0, errByte]
                 if (frame.can_dlc >= 8) {
-                    int8_t tmpC    = static_cast<int8_t>(frame.data[1]);
-                    uint16_t volt  = static_cast<uint16_t>((frame.data[4]<<8) | frame.data[3]);
-                    uint8_t err    = frame.data[7];
+                    int8_t tmpC = static_cast<int8_t>(frame.data[1]);
+                    uint16_t volt = static_cast<uint16_t>((frame.data[4] << 8) | frame.data[3]);
+                    uint8_t err = frame.data[7];
                     m_state.temperatureC = tmpC;
-                    m_state.busVoltage   = volt * 0.1; 
+                    m_state.busVoltage = volt * 0.1;
                     m_state.errorPresent = (err != 0);
-                    m_state.errorCode    = err;
+                    m_state.errorCode = err;
                 }
                 break;
             }
             case 0x9B:
             {
-                // clear error => returns same format as 0x9A
+                // Clear error response: same format as 0x9A.
                 if (frame.can_dlc >= 8) {
-                    int8_t tmpC    = static_cast<int8_t>(frame.data[1]);
-                    uint16_t volt  = static_cast<uint16_t>((frame.data[4]<<8) | frame.data[3]);
-                    uint8_t err    = frame.data[7];
+                    int8_t tmpC = static_cast<int8_t>(frame.data[1]);
+                    uint16_t volt = static_cast<uint16_t>((frame.data[4] << 8) | frame.data[3]);
+                    uint8_t err = frame.data[7];
                     m_state.temperatureC = tmpC;
-                    m_state.busVoltage   = volt * 0.1; 
+                    m_state.busVoltage = volt * 0.1;
                     m_state.errorPresent = (err != 0);
-                    m_state.errorCode    = err;
+                    m_state.errorCode = err;
                 }
                 break;
             }
             case 0x9C:
             {
-                // read state2 => [0x9C, temp, torqueLo, torqueHi, spdLo, spdHi, encLo, encHi]
+                // Read Motor State2 response: [0x9C, temp, torqueLo, torqueHi, speedLo, speedHi, encLo, encHi]
                 if (frame.can_dlc >= 8) {
-                    int8_t t    = static_cast<int8_t>(frame.data[1]);
-                    int16_t iq  = unpack16(frame, 2);
+                    int8_t t = static_cast<int8_t>(frame.data[1]);
+                    int16_t iq = unpack16(frame, 2);
                     int16_t spd = unpack16(frame, 4);
-                    uint16_t e  = static_cast<uint16_t>((frame.data[7]<<8) | frame.data[6]);
-                    m_state.temperatureC   = t;
-                    m_state.torqueCurrentA = iq * (16.5/2048.0);
-                    m_state.speedDeg_s     = spd * 1.0; 
-                    m_state.positionDeg    = e * (360.0/16383.0);
+                    uint16_t e = static_cast<uint16_t>((frame.data[7] << 8) | frame.data[6]);
+                    m_state.temperatureC = t;
+                    m_state.torqueCurrentA = iq;
+                    m_state.speedDeg_s = spd * 1.0;
+                    m_state.positionDeg = e * (360.0 / 16383.0);
                 }
                 break;
             }
             case 0x9D:
             {
-                // read state3 => [0x9D, temp, iA_L, iA_H, iB_L, iB_H, iC_L, iC_H]
-                // parse if you want phase currents. We'll skip storing them except temp
+                // Read Motor State3 response: [0x9D, temp, iA_L, iA_H, iB_L, iB_H, iC_L, iC_H]
                 if (frame.can_dlc >= 8) {
                     int8_t t = static_cast<int8_t>(frame.data[1]);
-                    m_state.temperatureC   = t;
+                    m_state.temperatureC = t;
                 }
                 break;
             }
             case 0x92:
             {
-                // read multi angle => [0x92, angle0..angle6 ? doc says up to 7 bytes for 64-bit
-                // We might parse partial for skeleton
+                // Read multi-turn angle response.
+                // Assume response: [0x92, 0, 0, ang0, ang1, ang2, ang3, 0]
+                if (frame.can_dlc >= 8) {
+                    int32_t angle = unpack32(frame, 3);
+                    // Assume angle is in 0.01 degrees per LSB.
+                    m_state.positionDeg = angle * 0.01;
+                }
                 break;
             }
             case 0x94:
             {
-                // single angle => [0x94, 0,0,0, angle0..3]
+                // Read single-turn angle response.
+                // Assume response: [0x94, 0, 0, ang0, ang1, ang2, ang3, 0]
+                if (frame.can_dlc >= 8) {
+                    int32_t angle = unpack32(frame, 3);
+                    m_state.positionDeg = angle * 0.01;
+                }
                 break;
             }
             case 0x95:
             {
-                // clear angle => no special parse
+                // Clear angle loop response. We assume an acknowledgment.
+                // No additional data parsing is needed.
                 break;
             }
             case 0x19:
             {
-                // write current pos => returns offset in last 2 bytes
+                // Write current position as zero response.
+                // Assume response includes an offset in the last two bytes.
+                if (frame.can_dlc >= 8) {
+                    int16_t offset = unpack16(frame, 6);
+                    // For example, store the offset or print it.
+                    std::cout << "[Motor Interface] Current position zero offset: " << offset << "\n";
+                }
                 break;
             }
             case 0x91:
             {
-                // write encoder offset => echo
+                // Write encoder offset response. Echo confirmation.
+                if (frame.can_dlc >= 8) {
+                    int16_t offset = unpack16(frame, 6);
+                    std::cout << "[Motor Interface] Encoder offset set to: " << offset << "\n";
+                }
                 break;
             }
             default:
-                // Do nothing
+                // Unknown command; do nothing.
                 break;
-            } // switch
-        }
-     }
-}
+            } // end switch
 
+            return; // Successfully parsed matching frame.
+        } // if receiveMessage
+    } // while loop
+    std::cout << "[Motor Interface] CAN Loop Overrun (10ms - motor_interface.cpp::readFrameForCommand)\n";
+}

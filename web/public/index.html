@@ -66,61 +66,119 @@
   </div>
 
   <div class="container">
-    <h2>PID Gains</h2>
+    <h2>PID Gains (Write to ROM)</h2>
     <label>Angle Kp:</label> <input id="angKp" type="number" value="100"/> 
     <label>Angle Ki:</label> <input id="angKi" type="number" value="50"/><br/><br/>
     <label>Speed Kp:</label> <input id="spdKp" type="number" value="50"/> 
     <label>Speed Ki:</label> <input id="spdKi" type="number" value="20"/><br/><br/>
     <label>IQ Kp:</label> <input id="iqKp" type="number" value="50"/> 
     <label>IQ Ki:</label> <input id="iqKi" type="number" value="50"/>
-    <button onclick="writePID()">Write PID</button>
+    <button onclick="writePID_ROM()">Write PID ROM</button>
   </div>
 
   <div class="container">
-    <h2>Position & Velocity Tuning</h2>
-    <label>Position (raw, 0.01°):</label>
-    <input id="posVal" type="number" value="36000"/>
-    <button onclick="setPosition()">Set Position</button>
-    <br/><br/>
-    <label>Velocity (0.01 dps):</label>
-    <input id="velVal" type="number" value="9000"/>
-    <button onclick="setVelocity()">Set Velocity</button>
-    <br/><br/>
-    <label>Single-Turn Angle (raw, 0.01°):</label>
-    <input id="singleTurnVal" type="number" value="36000"/>
-    <button onclick="setSingleTurn()">Set Single-Turn</button>
-    <br/><br/>
-    <label>Multi-Turn Angle (raw, 0.01°):</label>
-    <input id="multiTurnVal" type="number" value="72000"/>
-    <button onclick="setMultiTurn()">Set Multi-Turn</button>
+    <h2>Encoder / Zero</h2>
+    <button onclick="readEncoder()">Read Encoder</button>
+    <input id="encoderVal" type="number" value="0"/>
+    <button onclick="writeEncoderZero()">Set Encoder Zero</button>
+    <button onclick="writeCurrentPosZero()">Write Current Pos as Zero</button>
   </div>
 
   <div class="container">
-    <h2>Motor Status</h2>
-    <div>Temperature: <span id="temp">--</span> °C</div>
-    <div>Torque (A): <span id="torque">--</span></div>
-    <div>Speed (deg/s): <span id="speed">--</span></div>
-    <div>Position (deg): <span id="pos">--</span></div>
-    <div>Error Status: <span id="errorStatus">None</span></div>
-    <button onclick="clearErrors()">Clear Errors</button>
+    <h2>Acceleration</h2>
+    <label>Accel (0.01 dps^2):</label>
+    <input id="accelVal" type="number" value="1000"/>
+    <button onclick="writeAcceleration()">Write Accel</button>
+    <button onclick="readAcceleration()">Read Accel</button>
+  </div>
+
+  <div class="container">
+    <h2>Error / State</h2>
+    <button onclick="clearMotorError()">Clear Motor Error</button>
+    <button onclick="readMotorState1()">Read Motor State1</button>
+    <button onclick="readMotorState2()">Read Motor State2</button>
+    <button onclick="readMotorState3()">Read Motor State3</button>
+  </div>
+
+  <div class="container">
+    <h2>Real-Time Data</h2>
+    <div>Temperature: <span id="temp">--</span></div>
+    <div>Torque: <span id="torque">--</span></div>
+    <div>Speed: <span id="speed">--</span></div>
+    <div>Position: <span id="pos">--</span></div>
+    <div>Encoder: <span id="enc">--</span></div>
+    <div>Error: <span id="errFlag">--</span></div>
   </div>
 
   <div class="container">
     <h2>Motor Data Graph</h2>
     <canvas id="myChart" width="600" height="300"></canvas>
-    <button onclick="togglePause()">Pause/Resume Graph</button>
   </div>
 
   <script>
     let socket = io();
     let paused = false;
-    let lastCommandValue = null; // stores the last commanded input value
-    let lastCommandLabel = '';   // e.g. "Position", "Torque", etc.
 
-    // Chart.js configuration including a new dataset for commanded input
+    // Send command to Node -> Daemon
+    function sendCmd(obj) {
+      socket.emit('sendCommand', obj);
+    }
+
+    function applyTorque() {
+      let val = parseInt(document.getElementById('torqueVal').value);
+      sendCmd({cmd:'setTorque', motorID:1, value: val});
+    }
+
+    function writePID_ROM() {
+      let angKp = parseInt(document.getElementById('angKp').value);
+      let angKi = parseInt(document.getElementById('angKi').value);
+      let spdKp = parseInt(document.getElementById('spdKp').value);
+      let spdKi = parseInt(document.getElementById('spdKi').value);
+      let iqKp  = parseInt(document.getElementById('iqKp').value);
+      let iqKi  = parseInt(document.getElementById('iqKi').value);
+      sendCmd({
+        cmd:'writePID_ROM',
+        motorID:1,
+        angKp, angKi, spdKp, spdKi, iqKp, iqKi
+      });
+    }
+
+    function readEncoder() {
+      sendCmd({cmd:'readEncoder', motorID:1});
+    }
+    function writeEncoderZero() {
+      let val = parseInt(document.getElementById('encoderVal').value);
+      sendCmd({cmd:'writeEncoderZero', motorID:1, encoderValue: val});
+    }
+    function writeCurrentPosZero() {
+      sendCmd({cmd:'writeCurrentPosZero', motorID:1});
+    }
+
+    function writeAcceleration() {
+      let val = parseInt(document.getElementById('accelVal').value);
+      sendCmd({cmd:'writeAcceleration', motorID:1, accelVal: val});
+    }
+    function readAcceleration() {
+      sendCmd({cmd:'readAcceleration', motorID:1});
+    }
+
+    function clearMotorError() {
+      sendCmd({cmd:'clearMotorError', motorID:1});
+    }
+    function readMotorState1() {
+      sendCmd({cmd:'readMotorState1', motorID:1});
+    }
+    function readMotorState2() {
+      sendCmd({cmd:'readMotorState2', motorID:1});
+    }
+    function readMotorState3() {
+      sendCmd({cmd:'readMotorState3', motorID:1});
+    }
+
+    // Chart
     let ctx = document.getElementById('myChart').getContext('2d');
     let chartData = {
-      labels: [], // time labels
+      labels: [],
       datasets: [
         {
           label: 'Position (deg)',
@@ -133,13 +191,6 @@
           data: [],
           borderColor: 'red',
           fill: false,
-        },
-        {
-          label: 'Commanded Input',
-          data: [],
-          borderColor: 'green',
-          borderDash: [5,5],
-          fill: false,
         }
       ]
     };
@@ -148,102 +199,38 @@
       data: chartData,
       options: {
         animation: false,
-        scales: { x: {display: false} }
+        scales: {
+          x: {display: false}
+        }
       }
     });
 
-    function togglePause(){
-      paused = !paused;
-    }
-
-    socket.on('motorStates', (msg)=>{
-      // msg.motors["1"] expected structure: { temp, torqueA, speedDeg_s, posDeg, error }
-      let m = msg.motors["1"];
+    // Listen for motorStates from daemon
+    socket.on('motorStates', (msg) => {
+      let motors = msg.motors;
+      // just show the first motor if ID=1
+      let m = motors.find(x => x.id === 1);
       if(!m) return;
-      document.getElementById('temp').innerText   = m.temp.toFixed(1);
-      document.getElementById('torque').innerText = m.torqueA.toFixed(2);
-      document.getElementById('speed').innerText  = m.speedDeg_s.toFixed(2);
-      document.getElementById('pos').innerText    = m.posDeg.toFixed(2);
-      // Update error status display if available
-      if(m.error && m.error !== 0) {
-        document.getElementById('errorStatus').innerText = "Error Code: " + m.error;
-      } else {
-        document.getElementById('errorStatus').innerText = "None";
-      }
-      
-      if(!paused){
-        let now = new Date().toLocaleTimeString();
-        chartData.labels.push(now);
-        chartData.datasets[0].data.push(m.posDeg);
-        chartData.datasets[1].data.push(m.speedDeg_s);
-        // For the commanded input dataset, plot the last commanded value if available
-        if(lastCommandValue !== null){
-          chartData.datasets[2].data.push(lastCommandValue);
-        } else {
-          chartData.datasets[2].data.push(null);
-        }
-        // Limit the number of data points
-        if(chartData.labels.length > 100){
+      document.getElementById('temp').innerText = m.temp.toFixed(2);
+      document.getElementById('torque').innerText = m.torque.toFixed(2);
+      document.getElementById('speed').innerText = m.speed.toFixed(2);
+      document.getElementById('pos').innerText = m.position.toFixed(2);
+      document.getElementById('enc').innerText = m.encoder;
+      document.getElementById('errFlag').innerText = m.error ? 'YES' : 'NO';
+
+      // update chart
+      if(!paused) {
+        chartData.labels.push(Date.now());
+        chartData.datasets[0].data.push(m.position);
+        chartData.datasets[1].data.push(m.speed);
+        if(chartData.labels.length > 200) {
           chartData.labels.shift();
-          chartData.datasets.forEach(ds => ds.data.shift());
+          chartData.datasets[0].data.shift();
+          chartData.datasets[1].data.shift();
         }
-        myChart.update();
+        myChart.update('none');
       }
     });
-
-    function sendCmd(obj){
-      socket.emit('sendCommand', obj);
-      console.log("Sent command:", obj);
-    }
-
-    function applyTorque(){
-      let val = parseInt(document.getElementById('torqueVal').value);
-      lastCommandValue = val;
-      lastCommandLabel = 'Torque';
-      sendCmd({ cmd: 'setTorque', motorID: 1, value: val });
-    }
-
-    function writePID(){
-      let akp = parseInt(document.getElementById('angKp').value);
-      let aki = parseInt(document.getElementById('angKi').value);
-      let skp = parseInt(document.getElementById('spdKp').value);
-      let ski = parseInt(document.getElementById('spdKi').value);
-      let tkp = parseInt(document.getElementById('iqKp').value);
-      let tki = parseInt(document.getElementById('iqKi').value);
-      sendCmd({ cmd: 'setPID', motorID: 1, angKp: akp, angKi: aki, spdKp: skp, spdKi: ski, iqKp: tkp, iqKi: tki });
-    }
-
-    function setPosition(){
-      let pos = parseInt(document.getElementById('posVal').value);
-      lastCommandValue = pos;
-      lastCommandLabel = 'Position';
-      sendCmd({ cmd: 'setPosition', motorID: 1, value: pos });
-    }
-
-    function setVelocity(){
-      let vel = parseInt(document.getElementById('velVal').value);
-      lastCommandValue = vel;
-      lastCommandLabel = 'Velocity';
-      sendCmd({ cmd: 'setVelocity', motorID: 1, value: vel });
-    }
-
-    function setSingleTurn(){
-      let angle = parseInt(document.getElementById('singleTurnVal').value);
-      lastCommandValue = angle;
-      lastCommandLabel = 'SingleTurn';
-      sendCmd({ cmd: 'setSingleTurn', motorID: 1, value: angle });
-    }
-
-    function setMultiTurn(){
-      let angle = parseInt(document.getElementById('multiTurnVal').value);
-      lastCommandValue = angle;
-      lastCommandLabel = 'MultiTurn';
-      sendCmd({ cmd: 'setMultiTurn', motorID: 1, value: angle });
-    }
-
-    function clearErrors(){
-      sendCmd({ cmd: 'clearMotorError', motorID: 1 });
-    }
   </script>
 </body>
 </html>

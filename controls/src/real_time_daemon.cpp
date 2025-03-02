@@ -258,7 +258,7 @@ void RealTimeDaemon::controlThreadFunc()
 void RealTimeDaemon::handleCommand(const std::string& jsonStr)
 {
     IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Handling command: " << jsonStr << "\n")
-    // parse JSON
+    // Parse JSON using JsonCPP
     Json::CharReaderBuilder rb;
     Json::Value root;
     std::string errs;
@@ -268,8 +268,8 @@ void RealTimeDaemon::handleCommand(const std::string& jsonStr)
         std::cerr << "[RealTimeDaemon] Invalid JSON: " << errs << "\n";
         return;
     }
-
     if (!root.isObject()) return;
+    
     std::string cmd = root["cmd"].asString();
     int motorID = root.get("motorID", 1).asInt();
     IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Command parsed: " << cmd << " for motorID " << motorID << "\n")
@@ -279,35 +279,96 @@ void RealTimeDaemon::handleCommand(const std::string& jsonStr)
 
         if (cmd == "motorOn") {
             mot.motorOn();
-        }
-        else if (cmd == "motorOff") {
+        } else if (cmd == "motorOff") {
             mot.motorOff();
-        }
-        else if (cmd == "motorStop") {
+        } else if (cmd == "motorStop") {
             mot.motorStop();
+        } else if (cmd == "openLoopControl") {
+            int power = root.get("powerControl", 0).asInt();
+            mot.openLoopControl(static_cast<int16_t>(power));
+        } else if (cmd == "setTorque") {
+            int value = root.get("value", 0).asInt();
+            mot.setTorque(static_cast<int16_t>(value));
+        } else if (cmd == "setSpeed") {
+            int value = root.get("value", 0).asInt();
+            mot.setSpeed(static_cast<int32_t>(value));
+        } else if (cmd == "setMultiAngle") {
+            int value = root.get("value", 0).asInt();
+            mot.setMultiAngle(static_cast<int32_t>(value));
+        } else if (cmd == "setMultiAngleWithSpeed") {
+            int angle = root.get("angle", 0).asInt();
+            int maxSpeed = root.get("maxSpeed", 0).asInt();
+            mot.setMultiAngleWithSpeed(static_cast<int32_t>(angle), static_cast<uint16_t>(maxSpeed));
+        } else if (cmd == "setSingleAngle") {
+            int spin = root.get("spinDirection", 0).asInt();
+            int angle = root.get("angle", 0).asInt();
+            mot.setSingleAngle(static_cast<uint8_t>(spin), static_cast<uint16_t>(angle));
+        } else if (cmd == "setSingleAngleWithSpeed") {
+            int spin = root.get("spinDirection", 0).asInt();
+            int angle = root.get("angle", 0).asInt();
+            int maxSpeed = root.get("maxSpeed", 0).asInt();
+            mot.setSingleAngleWithSpeed(static_cast<uint8_t>(spin), static_cast<uint16_t>(angle), static_cast<uint16_t>(maxSpeed));
+        } else if (cmd == "setIncrementAngle") {
+            int value = root.get("incAngle", 0).asInt();
+            mot.setIncrementAngle(static_cast<int32_t>(value));
+        } else if (cmd == "setIncrementAngleWithSpeed") {
+            int incAngle = root.get("incAngle", 0).asInt();
+            int maxSpeed = root.get("maxSpeed", 0).asInt();
+            mot.setIncrementAngleWithSpeed(static_cast<int32_t>(incAngle), static_cast<uint16_t>(maxSpeed));
+        } else if (cmd == "readPID") {
+            auto pid = mot.readPID();
+            // Optionally, you can send the PID values back to the client.
+        } else if (cmd == "writePID_RAM") {
+            uint8_t angKp = root.get("angKp", 100).asUInt();
+            uint8_t angKi = root.get("angKi", 50).asUInt();
+            uint8_t spdKp = root.get("spdKp", 50).asUInt();
+            uint8_t spdKi = root.get("spdKi", 20).asUInt();
+            uint8_t iqKp  = root.get("iqKp", 50).asUInt();
+            uint8_t iqKi  = root.get("iqKi", 50).asUInt();
+            mot.writePID_RAM(angKp, angKi, spdKp, spdKi, iqKp, iqKi);
+        } else if (cmd == "writePID_ROM") {
+            uint8_t angKp = root.get("angKp", 100).asUInt();
+            uint8_t angKi = root.get("angKi", 50).asUInt();
+            uint8_t spdKp = root.get("spdKp", 50).asUInt();
+            uint8_t spdKi = root.get("spdKi", 20).asUInt();
+            uint8_t iqKp  = root.get("iqKp", 50).asUInt();
+            uint8_t iqKi  = root.get("iqKi", 50).asUInt();
+            mot.writePID_ROM(angKp, angKi, spdKp, spdKi, iqKp, iqKi);
+        } else if (cmd == "readAcceleration") {
+            int32_t accel = mot.readAcceleration();
+            // Optionally send accel back
+        } else if (cmd == "writeAcceleration") {
+            int accel = root.get("accel", 0).asInt();
+            mot.writeAcceleration(static_cast<int32_t>(accel));
+        } else if (cmd == "readEncoder") {
+            mot.readEncoder();
+        } else if (cmd == "writeEncoderOffset") {
+            int offset = root.get("offset", 0).asInt();
+            mot.writeEncoderOffset(static_cast<uint16_t>(offset));
+        } else if (cmd == "writeCurrentPosAsZero") {
+            mot.writeCurrentPosAsZero();
+        } else if (cmd == "readMultiAngle") {
+            mot.readMultiAngle();
+        } else if (cmd == "readSingleAngle") {
+            mot.readSingleAngle();
+        } else if (cmd == "clearAngle") {
+            mot.clearAngle();
+        } else if (cmd == "readState1_Error") {
+            mot.readState1_Error();
+        } else if (cmd == "clearError") {
+            mot.clearError();
+        } else if (cmd == "readState2") {
+            mot.readState2();
+        } else if (cmd == "readState3") {
+            mot.readState3();
+        } else {
+            std::cerr << "[RealTimeDaemon] Unknown command: " << cmd << "\n";
         }
-        else if (cmd == "setTorque") {
-            int val = root["value"].asInt();
-            mot.setTorque(val);
-        }
-        else if (cmd == "setPID") {
-            uint8_t akp = root["angKp"].asUInt();
-            uint8_t aki = root["angKi"].asUInt();
-            uint8_t skp = root["spdKp"].asUInt();
-            uint8_t ski = root["spdKi"].asUInt();
-            uint8_t tkp = root["iqKp"].asUInt();
-            uint8_t tki = root["iqKi"].asUInt();
-            mot.writePID_RAM(akp, aki, skp, ski, tkp, tki);
-        }
-        else if (cmd == "setPosition") {
-            int32_t position = root["value"].asInt();
-            mot.setMultiAngle(position);
-        }
-        // Additional commands can be added here as needed.
     } catch (std::exception &ex) {
         std::cerr << "[RealTimeDaemon] handleCommand exception: " << ex.what() << "\n";
     }
 }
+
 
 /**********************************************************/
 /* sendJson                                               */
