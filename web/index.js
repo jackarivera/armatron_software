@@ -62,14 +62,14 @@ io.on('connection', (socket) => {
   console.log("[Node] Browser connected via socket.io");
 
   socket.on('sendCommand', (msg) => {
-    if(DEBUG) {
+    if (DEBUG) {
       console.log("[Node] Received command from browser:", msg);
     }
     // Forward command to daemon
     if(client) {
       let line = JSON.stringify(msg) + "\n";
       client.write(line);
-      if(DEBUG) {
+      if (DEBUG) {
         console.log("[Node] Command forwarded to daemon:", line);
       }
     } else {
