@@ -404,7 +404,7 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
                     int16_t enc    = unpack16(frame, 2);
                     int16_t encRaw = unpack16(frame, 4);
                     int16_t off    = unpack16(frame, 6);
-                    m_state.positionDeg = enc * (360.0 / 16383.0); // adjust per your encoder spec
+                    m_state.positionDeg = enc * (360.0 / 65535.0); // adjust per your encoder spec
                 }
                 break;
             }
@@ -447,7 +447,7 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
                     m_state.temperatureC = t;
                     m_state.torqueCurrentA = iq;
                     m_state.speedDeg_s = spd * 1.0;
-                    m_state.positionDeg = e * (360.0 / 16383.0);
+                    //m_state.positionDeg = e * (360.0 / 65535.0);
                 }
                 break;
             }
@@ -465,7 +465,7 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
                 // Read multi-turn angle response.
                 // Assume response: [0x92, 0, 0, ang0, ang1, ang2, ang3, 0]
                 if (frame.can_dlc >= 8) {
-                    int32_t angle = unpack32(frame, 3);
+                    int32_t angle = unpack32(frame, 4);
                     // Assume angle is in 0.01 degrees per LSB.
                     m_state.positionDeg = angle * 0.01;
                 }
@@ -476,7 +476,7 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
                 // Read single-turn angle response.
                 // Assume response: [0x94, 0, 0, ang0, ang1, ang2, ang3, 0]
                 if (frame.can_dlc >= 8) {
-                    int32_t angle = unpack32(frame, 3);
+                    int32_t angle = unpack32(frame, 4);
                     m_state.positionDeg = angle * 0.01;
                 }
                 break;

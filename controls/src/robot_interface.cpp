@@ -34,5 +34,6 @@ void RobotInterface::updateAll()
     for(auto &m : m_motors) {
         // For demonstration, let's do readState2
         m.readState2();
+        m.readSingleAngle();
     }
 }

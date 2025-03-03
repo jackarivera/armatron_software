@@ -15,6 +15,8 @@
     h1, h2 {
       color: #00509e;
     }
+
+    /* .container class for main sections with box shadow */
     .container {
       background: #fff;
       border-radius: 5px;
@@ -22,6 +24,12 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       margin-bottom: 20px;
     }
+
+    /* For sub-sections that we do not want to have container styling */
+    .sub-section {
+      margin-bottom: 20px;
+    }
+
     label {
       margin-right: 5px;
     }
@@ -42,46 +50,101 @@
     button:hover {
       background: #003f7f;
     }
-    .status {
-      margin-top: 10px;
-      padding: 10px;
-      background: #e0e0e0;
-      border-radius: 3px;
+
+    /* Flex wrapper for the real-time data / position & torque vs. the graph */
+    .flex-wrapper {
+      display: flex;
+      width: 100%;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-top: 20px;
+    }
+    .left-column {
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+      margin-right: 10px; /* small gap on the right side */
+    }
+    .right-column {
+      width: 50%;
     }
   </style>
 </head>
 <body>
+  <!-- Top container with everything that was previously combined -->
   <div class="container">
     <h1>Motor #1 Control</h1>
     <button onclick="sendCmd({cmd:'motorOn', motorID:1})">Motor ON</button>
     <button onclick="sendCmd({cmd:'motorOff', motorID:1})">Motor OFF</button>
     <button onclick="sendCmd({cmd:'motorStop', motorID:1})">Motor STOP</button>
-  </div>
 
-  <div class="container">
-    <h2>Position & Torque Control</h2>
-    <div>
-    <label>Torque (raw):</label>
-    <input id="torqueVal" type="number" value="50"/>
-    <button onclick="applyTorque()">Set Torque</button>
+    <!-- Real-Time Data and Position & Torque Control, side by side with the Motor Data Graph -->
+    <div class="flex-wrapper">
+      <div class="left-column">
+        <!-- Real-Time Data (no container styling) -->
+        <div class="sub-section">
+          <h2>Real-Time Data</h2>
+          <div>Temperature: <span id="temp">--</span></div>
+          <div>Torque: <span id="torque">--</span></div>
+          <div>Speed: <span id="speed">--</span></div>
+          <div>Position: <span id="pos">--</span></div>
+          <div>Error: <span id="errFlag">--</span></div>
+          <div>
+            <label>Position Scaling Factor (Units->360 deg):</label>
+            <input id="pos_scaling_factor" type="number" value="360"/>
+          </div>
+          <button onclick="clearMotorError()">Clear Motor Error</button>
+          <button onclick="readMotorState1()">Read Motor State1</button>
+          <button onclick="readMotorState2()">Read Motor State2</button>
+          <button onclick="readMotorState3()">Read Motor State3</button>
+        </div>
+        <!-- Position & Torque Control (no container styling) -->
+        <div class="sub-section">
+          <h2>Position &amp; Torque Control</h2>
+          <div>
+            <label>Torque (raw):</label>
+            <input id="torqueVal" type="number" value="50"/>
+            <button onclick="applyTorque()">Set Torque</button>
+          </div>
+          <div>
+            <label>Position (deg):</label>
+            <input id="posVal" type="number" value="90"/>
+            <label>MaxSpeed (dps):</label>
+            <input id="posSpeedVal" type="number" value="360"/>
+            <label>Spin Direction (0/1):</label>
+            <input id="posSpinDir" type="number" value="0"/>
+            <button onclick="applyPosition()">Set Position</button>
+          </div>
+        </div>
+      </div>
+      <div class="right-column">
+        <!-- Motor Data Graph (no container styling) -->
+        <div class="sub-section">
+          <h2>Motor Data Graph</h2>
+          <button onclick="togglePause()">Pause/Resume Graph</button>
+          <canvas id="myChart" width="300" height="150"></canvas>
+        </div>
+      </div>
     </div>
-    <label>Position (deg):</label>
-    <input id="posVal" type="number" value="90"/>
-    <label>MaxSpeed (dps):</label>
-    <input id="posSpeedVal" type="number" value="360"/>
-    <label>Spin Direction (0/1):</label>
-    <input id="posSpinDir" type="number" value="0"/>
-    <button onclick="applyPosition()">Set Position</button>
   </div>
 
+  <!-- Below remain separate containers with shadows as originally -->
   <div class="container">
     <h2>PID Gains (Write to ROM)</h2>
-    <label>Angle Kp:</label> <input id="angKp" type="number" value="100"/> 
-    <label>Angle Ki:</label> <input id="angKi" type="number" value="50"/><br/><br/>
-    <label>Speed Kp:</label> <input id="spdKp" type="number" value="50"/> 
-    <label>Speed Ki:</label> <input id="spdKi" type="number" value="20"/><br/><br/>
-    <label>IQ Kp:</label> <input id="iqKp" type="number" value="50"/> 
-    <label>IQ Ki:</label> <input id="iqKi" type="number" value="50"/>
+    <label>Angle Kp:</label>
+    <input id="angKp" type="number" value="100"/>
+    <label>Angle Ki:</label>
+    <input id="angKi" type="number" value="50"/>
+    <br/><br/>
+    <label>Speed Kp:</label>
+    <input id="spdKp" type="number" value="50"/>
+    <label>Speed Ki:</label>
+    <input id="spdKi" type="number" value="20"/>
+    <br/><br/>
+    <label>IQ Kp:</label>
+    <input id="iqKp" type="number" value="50"/>
+    <label>IQ Ki:</label>
+    <input id="iqKi" type="number" value="50"/>
     <button onclick="writePID_ROM()">Write PID ROM</button>
   </div>
 
@@ -101,29 +164,6 @@
     <button onclick="readAcceleration()">Read Accel</button>
   </div>
 
-  <div class="container">
-    <h2>Error / State</h2>
-    <button onclick="clearMotorError()">Clear Motor Error</button>
-    <button onclick="readMotorState1()">Read Motor State1</button>
-    <button onclick="readMotorState2()">Read Motor State2</button>
-    <button onclick="readMotorState3()">Read Motor State3</button>
-  </div>
-
-  <div class="container">
-    <h2>Real-Time Data</h2>
-    <div>Temperature: <span id="temp">--</span></div>
-    <div>Torque: <span id="torque">--</span></div>
-    <div>Speed: <span id="speed">--</span></div>
-    <div>Position: <span id="pos">--</span></div>
-    <div>Error: <span id="errFlag">--</span></div>
-  </div>
-
-  <div class="container">
-    <h2>Motor Data Graph</h2>
-    <button onclick="togglePause()">Pause/Resume Graph</button>
-    <canvas id="myChart" width="600" height="300"></canvas>
-  </div>
-
   <script>
     let socket = io();
     let paused = false;
@@ -141,6 +181,7 @@
 
     function applyTorque() {
       let val = parseInt(document.getElementById('torqueVal').value);
+      lastCommandValue = val;
       sendCmd({cmd:'setTorque', motorID:1, value: val});
     }
 
@@ -148,7 +189,14 @@
       let pos_val = parseInt(document.getElementById('posVal').value);
       let speed_val = parseInt(document.getElementById('posSpeedVal').value);
       let spin_dir = parseInt(document.getElementById('posSpinDir').value);
-      sendCmd({cmd:'setSingleAngleWithSpeed', motorID:1, spinDirection: spin_dir, angle: pos_val, maxSpeed: speed_val});
+      lastCommandValue = pos_val;
+      sendCmd({
+        cmd:'setSingleAngleWithSpeed',
+        motorID:1,
+        spinDirection: spin_dir,
+        angle: pos_val,
+        maxSpeed: speed_val
+      });
     }
 
     function writePID_ROM() {
@@ -223,6 +271,7 @@
         }
       ]
     };
+
     let myChart = new Chart(ctx, {
       type: 'line',
       data: chartData,
@@ -244,16 +293,18 @@
       document.getElementById('temp').innerText = m.temp.toFixed(2);
       document.getElementById('torque').innerText = m.torqueA.toFixed(2);
       document.getElementById('speed').innerText = m.speedDeg_s.toFixed(2);
-      document.getElementById('pos').innerText = m.posDeg.toFixed(2);
+      document.getElementById('pos').innerText = (360 * m.posDeg / document.getElementById('pos_scaling_factor').value).toFixed(2);
       document.getElementById('errFlag').innerText = (m.error && m.error != 0) ? 'YES' : 'NO';
 
       // Update the chart if not paused.
       if (!paused) {
         let now = new Date().toLocaleTimeString();
         chartData.labels.push(now);
-        chartData.datasets[0].data.push(m.posDeg);
+        chartData.datasets[0].data.push(360 * m.posDeg / document.getElementById('pos_scaling_factor').value);
         chartData.datasets[1].data.push(m.speedDeg_s);
         chartData.datasets[2].data.push(lastCommandValue !== null ? lastCommandValue : null);
+
+        // Keep the dataset at a max of 200 data points
         if (chartData.labels.length > 200) {
           chartData.labels.shift();
           chartData.datasets.forEach(ds => ds.data.shift());
