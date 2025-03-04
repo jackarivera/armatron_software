@@ -200,7 +200,7 @@ void RealTimeDaemon::controlThreadFunc()
     IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Control thread running.\n")
     // 1 kHz loop
     auto nextTime = std::chrono::steady_clock::now();
-    std::chrono::microseconds period(1000); 
+    std::chrono::microseconds period(5000); 
 
     while (m_running) {
         // 1) Process inbound commands
