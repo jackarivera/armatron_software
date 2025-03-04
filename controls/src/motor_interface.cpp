@@ -122,38 +122,35 @@ void Motor::setMultiAngle(int32_t angleControl)
 void Motor::setMultiAngleWithSpeed(int32_t angle, uint16_t maxSpeed)
 {
     // 0xA4 => angle + speed
-    // data => [0x00, 0x00, spdLo, spdHi, angle0, angle1, angle2, angle3]
-    std::vector<uint8_t> d(8, 0);
-    d[2] = static_cast<uint8_t>( maxSpeed & 0xFF );
-    d[3] = static_cast<uint8_t>((maxSpeed >> 8) & 0xFF );
-    pack32(d, 4, angle);
+    // data => [0x00, spdLo, spdHi, angle0, angle1, angle2, angle3]
+    std::vector<uint8_t> d(7, 0);
+    d[1] = static_cast<uint8_t>( maxSpeed & 0xFF );
+    d[2] = static_cast<uint8_t>((maxSpeed >> 8) & 0xFF );
+    pack32(d, 3, angle);
 
     sendCmd(0xA4, d);
     readFrameForCommand(0xA4);
 }
 
-void Motor::setSingleAngle(uint8_t spinDirection, uint16_t angle)
+void Motor::setSingleAngle(uint8_t spinDirection, int32_t angle)
 {
-    // 0xA5 => single angle, data => [dir,0,0,0, angLo,angHi,0,0]
-    std::vector<uint8_t> d(8, 0);
+    // 0xA5 => single angle, data => [dir,0,0, angLo,angHi,angHi2,angHi3]
+    std::vector<uint8_t> d(7, 0);
     d[0] = spinDirection;
-    d[4] = static_cast<uint8_t>( angle & 0xFF );
-    d[5] = static_cast<uint8_t>((angle >> 8) & 0xFF );
-
+    pack32(d, 3, angle);
     sendCmd(0xA5, d);
     readFrameForCommand(0xA5);
 }
 
-void Motor::setSingleAngleWithSpeed(uint8_t spinDirection, uint16_t angle, uint16_t maxSpeed)
+void Motor::setSingleAngleWithSpeed(uint8_t spinDirection, int32_t angle, uint16_t maxSpeed)
 {
     // 0xA6 => single angle 2
-    // data => [dir, spdLo,spdHi, angLo,angHi, 0,0,0]
-    std::vector<uint8_t> d(8, 0);
+    // data => [dir, spdLo,spdHi, angLo, angHi, angHi2, angHi3]
+    std::vector<uint8_t> d(7, 0);
     d[0] = spinDirection;
     d[1] = static_cast<uint8_t>( maxSpeed & 0xFF );
     d[2] = static_cast<uint8_t>((maxSpeed >> 8) & 0xFF );
-    d[3] = static_cast<uint8_t>( angle & 0xFF );
-    d[4] = static_cast<uint8_t>((angle >> 8) & 0xFF );
+    pack32(d, 3, angle);
 
     sendCmd(0xA6, d);
     readFrameForCommand(0xA6);
@@ -162,9 +159,9 @@ void Motor::setSingleAngleWithSpeed(uint8_t spinDirection, uint16_t angle, uint1
 void Motor::setIncrementAngle(int32_t incAngle)
 {
     // 0xA7 => inc angle
-    // data => [0x00,0x00,0x00,0x00, inc0,inc1,inc2,inc3]
-    std::vector<uint8_t> d(8,0);
-    pack32(d, 4, incAngle);
+    // data => [0x00,0x00,0x00, inc0,inc1,inc2,inc3]
+    std::vector<uint8_t> d(7,0);
+    pack32(d, 3, incAngle);
 
     sendCmd(0xA7, d);
     readFrameForCommand(0xA7);
@@ -173,11 +170,11 @@ void Motor::setIncrementAngle(int32_t incAngle)
 void Motor::setIncrementAngleWithSpeed(int32_t incAngle, uint16_t maxSpeed)
 {
     // 0xA8 => inc angle + speed
-    // data => [0x00,0x00, spdLo, spdHi, inc0, inc1, inc2, inc3]
-    std::vector<uint8_t> d(8,0);
-    d[2] = static_cast<uint8_t>(maxSpeed & 0xFF);
-    d[3] = static_cast<uint8_t>((maxSpeed >> 8) & 0xFF);
-    pack32(d, 4, incAngle);
+    // data => [0x00, spdLo, spdHi, inc0, inc1, inc2, inc3]
+    std::vector<uint8_t> d(7,0);
+    d[1] = static_cast<uint8_t>(maxSpeed & 0xFF);
+    d[2] = static_cast<uint8_t>((maxSpeed >> 8) & 0xFF);
+    pack32(d, 3, incAngle);
 
     sendCmd(0xA8, d);
     readFrameForCommand(0xA8);

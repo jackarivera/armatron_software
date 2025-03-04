@@ -186,10 +186,10 @@
     }
 
     function applyPosition() {
-      let pos_val = parseInt(document.getElementById('posVal').value);
+      let pos_val = parseInt(document.getElementById('posVal').value * 1000);
       let speed_val = parseInt(document.getElementById('posSpeedVal').value);
       let spin_dir = parseInt(document.getElementById('posSpinDir').value);
-      lastCommandValue = pos_val;
+      lastCommandValue = pos_val / 1000;
       sendCmd({
         cmd:'setSingleAngleWithSpeed',
         motorID:1,
@@ -293,15 +293,15 @@
       document.getElementById('temp').innerText = m.temp.toFixed(2);
       document.getElementById('torque').innerText = m.torqueA.toFixed(2);
       document.getElementById('speed').innerText = m.speedDeg_s.toFixed(2);
-      document.getElementById('pos').innerText = (360 * m.posDeg / document.getElementById('pos_scaling_factor').value).toFixed(2);
+      document.getElementById('pos').innerText = (m.posDeg / 10).toFixed(2);
       document.getElementById('errFlag').innerText = (m.error && m.error != 0) ? 'YES' : 'NO';
 
       // Update the chart if not paused.
       if (!paused) {
         let now = new Date().toLocaleTimeString();
         chartData.labels.push(now);
-        chartData.datasets[0].data.push(360 * m.posDeg / document.getElementById('pos_scaling_factor').value);
-        chartData.datasets[1].data.push(m.speedDeg_s);
+        chartData.datasets[0].data.push(m.posDeg / 10);
+        chartData.datasets[1].data.push(0);
         chartData.datasets[2].data.push(lastCommandValue !== null ? lastCommandValue : null);
 
         // Keep the dataset at a max of 200 data points

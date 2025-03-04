@@ -91,12 +91,12 @@ public:
      * @brief Single-loop angle control 1 (0xA5). 
      *        spinDirection=0 => CW, 1 => CCW
      */
-    void setSingleAngle(uint8_t spinDirection, uint16_t angle);
+    void setSingleAngle(uint8_t spinDirection, int32_t angle);
 
     /**
      * @brief Single-loop angle control 2 (0xA6). angle + speed limit
      */
-    void setSingleAngleWithSpeed(uint8_t spinDirection, uint16_t angle, uint16_t maxSpeed);
+    void setSingleAngleWithSpeed(uint8_t spinDirection, int32_t angle, uint16_t maxSpeed);
 
     /**
      * @brief Increment angle control 1 (0xA7). 4-byte increment in 0.01 deg
