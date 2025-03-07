@@ -5,12 +5,7 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
-
-#ifdef DEBUG
-#define IFDEBUG(x) do { x; } while (0)
-#else
-#define IFDEBUG(x) do {} while (0)
-#endif
+#include "utils.hpp"
 
 
 CANHandler::CANHandler(const std::string& interface_name)
@@ -18,7 +13,7 @@ CANHandler::CANHandler(const std::string& interface_name)
 {
     // Create raw CAN socket
     m_socket_fd = socket(PF_CAN, SOCK_RAW, CAN_RAW);
-    IFDEBUG(std::cout << "[CANHandler][DEBUG] Socket created: " << m_socket_fd << "\n");
+    IFCANDEBUG(std::cout << "[CANHandler][DEBUG] Socket created: " << m_socket_fd << "\n");
     if (m_socket_fd < 0) {
         throw std::runtime_error("[CANHandler] Failed to open CAN socket");
     }
@@ -31,7 +26,7 @@ CANHandler::CANHandler(const std::string& interface_name)
         close(m_socket_fd);
         throw std::runtime_error("[CANHandler] Failed to get IF index for " + interface_name);
     }
-    IFDEBUG(std::cout << "[CANHandler][DEBUG] Interface index obtained: " << m_ifr.ifr_ifindex << "\n");
+    IFCANDEBUG(std::cout << "[CANHandler][DEBUG] Interface index obtained: " << m_ifr.ifr_ifindex << "\n");
 
     std::memset(&m_addr, 0, sizeof(m_addr));
     m_addr.can_family = AF_CAN;
@@ -42,13 +37,13 @@ CANHandler::CANHandler(const std::string& interface_name)
         close(m_socket_fd);
         throw std::runtime_error("[CANHandler] Failed to bind CAN socket to " + interface_name);
     }
-    IFDEBUG(std::cout << "[CANHandler][DEBUG] Socket bound to interface " << interface_name << "\n");
+    IFCANDEBUG(std::cout << "[CANHandler][DEBUG] Socket bound to interface " << interface_name << "\n");
 
     struct timeval tv;
     tv.tv_sec = 0;        // 0 seconds
     tv.tv_usec = 10000;   // 10 milliseconds timeout
 
-    IFDEBUG(std::cout << "[CANHandler][DEBUG] Setting socket receive timeout\n");
+    IFCANDEBUG(std::cout << "[CANHandler][DEBUG] Setting socket receive timeout\n");
     if (setsockopt(m_socket_fd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv)) < 0) {
         std::cerr << "[CANHandler][ERROR] Failed to set socket receive timeout.\n";
     }
@@ -56,7 +51,7 @@ CANHandler::CANHandler(const std::string& interface_name)
 
 CANHandler::~CANHandler()
 {
-    IFDEBUG(std::cout << "[CANHandler][DEBUG] Destructor called. Closing socket.\n");
+    IFCANDEBUG(std::cout << "[CANHandler][DEBUG] Destructor called. Closing socket.\n");
     if (m_socket_fd >= 0) {
         close(m_socket_fd);
     }
@@ -88,7 +83,7 @@ bool CANHandler::sendMessage(int can_id, uint8_t command, const std::vector<uint
     if (toCopy > 0) {
         std::memcpy(&frame.data[1], data.data(), toCopy);
     }
-    IFDEBUG(
+    IFCANDEBUG(
         std::cout << "[CANHandler][DEBUG] Sending CAN message: ID=" << (can_id & 0x7FF) 
                   << ", Command=0x" << std::hex << static_cast<int>(command) << std::dec
                   << ", Data=[";
@@ -101,7 +96,7 @@ bool CANHandler::sendMessage(int can_id, uint8_t command, const std::vector<uint
 
     // Write the frame
     ssize_t nbytes = write(m_socket_fd, &frame, sizeof(frame));
-    IFDEBUG(std::cout << "[CANHandler][DEBUG] write() returned " << nbytes << "\n");
+    IFCANDEBUG(std::cout << "[CANHandler][DEBUG] write() returned " << nbytes << "\n");
     return (nbytes == static_cast<ssize_t>(sizeof(frame)));
 }
 
@@ -114,7 +109,7 @@ bool CANHandler::receiveMessage(struct can_frame& frame)
     }
 
     ssize_t nbytes = read(m_socket_fd, &frame, sizeof(frame));
-    IFDEBUG(
+    IFCANDEBUG(
         if (nbytes == static_cast<ssize_t>(sizeof(frame))) {
             std::cout << "[CANHandler][DEBUG] Received CAN message: ID=" << (frame.can_id & 0x7FF)
                       << ", Data=[";

@@ -10,14 +10,7 @@
 #include <fcntl.h>
 #include <jsoncpp/json/json.h>
 #include <algorithm>
-
-#ifndef IFDEBUG
-#ifdef DEBUG
-#define IFDEBUG(x) do { x; } while (0);
-#else
-#define IFDEBUG(x) do {} while (0);
-#endif
-#endif
+#include "utils.hpp"
 
 
 namespace
@@ -35,7 +28,7 @@ RealTimeDaemon::RealTimeDaemon(RobotInterface& robot)
 {
     // We might remove any stale socket file
     ::unlink(m_socketPath.c_str());
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Constructor: Removed stale socket file if exists.\n")
+    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Constructor: Removed stale socket file if exists.\n");
 }
 
 RealTimeDaemon::~RealTimeDaemon()
@@ -49,11 +42,11 @@ RealTimeDaemon::~RealTimeDaemon()
 void RealTimeDaemon::start()
 {
     m_running = true;
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Starting daemon.\n")
+    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Starting daemon.\n");
 
     // 1) Create the socket
     m_sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Socket created: " << m_sockfd << "\n")
+    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Socket created: " << m_sockfd << "\n");
     if (m_sockfd < 0) {
         throw std::runtime_error("Failed to create Unix domain socket");
     }
@@ -68,22 +61,22 @@ void RealTimeDaemon::start()
         close(m_sockfd);
         throw std::runtime_error("Failed to bind to " + m_socketPath);
     }
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Socket bound to " << m_socketPath << "\n")
+    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Socket bound to " << m_socketPath << "\n");
 
     // 3) Listen
     if (listen(m_sockfd, 5) < 0) {
         close(m_sockfd);
         throw std::runtime_error("listen() failed");
     }
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Listening on socket.\n")
+    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Listening on socket.\n");
 
     // 4) Start the socket thread
     m_socketThread = std::thread(&RealTimeDaemon::socketThreadFunc, this);
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Socket thread started.\n")
+    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Socket thread started.\n");
 
     // 5) Start the real-time control thread
     m_controlThread = std::thread(&RealTimeDaemon::controlThreadFunc, this);
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Control thread started.\n")
+    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Control thread started.\n");
 
     std::cout << "[RealTimeDaemon] Started, socket at " << m_socketPath << "\n";
 }
@@ -93,22 +86,22 @@ void RealTimeDaemon::stop()
     if (!m_running) return;
 
     m_running = false;
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Stopping daemon.\n")
+    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Stopping daemon.\n");
 
     // close socket
     if (m_sockfd >= 0) {
         close(m_sockfd);
         m_sockfd = -1;
-        IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Socket closed.\n")
+        IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Socket closed.\n");
     }
 
     if (m_socketThread.joinable()) {
         m_socketThread.join();
-        IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Socket thread joined.\n")
+        IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Socket thread joined.\n");
     }
     if (m_controlThread.joinable()) {
         m_controlThread.join();
-        IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Control thread joined.\n")
+        IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Control thread joined.\n");
     }
 
     // Close all connected client sockets.
@@ -135,7 +128,7 @@ void RealTimeDaemon::socketThreadFunc()
             std::cerr << "[RealTimeDaemon] Accept error.\n";
             continue;
         }
-        IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Accepted client FD=" << clientFd << "\n");
+        IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Accepted client FD=" << clientFd << "\n");
 
         {
             // Add the client FD to our list.
@@ -154,13 +147,13 @@ void RealTimeDaemon::clientHandler(int clientFd)
     std::stringstream partial;
     while (m_running) {
         ssize_t r = recv(clientFd, buf, sizeof(buf), 0);
-        IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Received " << r << " bytes from client FD=" << clientFd << "\n");
+        IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Received " << r << " bytes from client FD=" << clientFd << "\n");
         if (r <= 0) {
             if (!partial.str().empty()) {
                 std::string line = partial.str();
                 std::lock_guard<std::mutex> lk(m_inboundMutex);
                 m_inboundQueue.push( IPCMessage{ line } );
-                IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Flushed partial JSON: " << line << "\n");
+                IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Flushed partial JSON: " << line << "\n");
             }
             break;
         }
@@ -169,11 +162,11 @@ void RealTimeDaemon::clientHandler(int clientFd)
                 std::string line = partial.str();
                 partial.str(std::string());
                 partial.clear();
-                IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Received JSON line: " << line << "\n");
+                IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Received JSON line: " << line << "\n");
                 if (!line.empty()) {
                     std::lock_guard<std::mutex> lk(m_inboundMutex);
                     m_inboundQueue.push( IPCMessage{ line } );
-                    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Pushed JSON line into queue: " << line << "\n");
+                    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Pushed JSON line into queue: " << line << "\n");
                 }
             } else {
                 partial << buf[i];
@@ -188,7 +181,7 @@ void RealTimeDaemon::clientHandler(int clientFd)
             m_clientFds.erase(it);
         }
     }
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Closed client FD=" << clientFd << "\n");
+    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Closed client FD=" << clientFd << "\n");
 }
 
 
@@ -197,7 +190,7 @@ void RealTimeDaemon::clientHandler(int clientFd)
 /**********************************************************/
 void RealTimeDaemon::controlThreadFunc()
 {
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Control thread running.\n")
+    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Control thread running.\n");
     // 1 kHz loop
     auto nextTime = std::chrono::steady_clock::now();
     std::chrono::microseconds period(5000); 
@@ -209,15 +202,15 @@ void RealTimeDaemon::controlThreadFunc()
             while (!m_inboundQueue.empty()) {
                 auto msg = m_inboundQueue.front();
                 m_inboundQueue.pop();
-                IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Processing command: " << msg.json << "\n")
+                IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Processing command: " << msg.json << "\n");
                 handleCommand(msg.json);
             }
         }
 
         // 2) Do real-time update for all motors
-        IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Updating all motors.\n")
+        IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Updating all motors.\n");
         m_robot.updateAll(); // This does CAN read/writes
-        IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Updated all motors.\n")
+        IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Updated all motors.\n");
 
         // 3) Broadcast states at ~ 60Hz
         static int counter = 0;
@@ -242,7 +235,7 @@ void RealTimeDaemon::controlThreadFunc()
             Json::StreamWriterBuilder builder;
             builder["indentation"] = ""; // Force compact, single-line output.
             std::string outStr = Json::writeString(builder, jroot);
-            IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Broadcasting state: " << outStr << "\n")
+            std::cout << "[RealTimeDaemon][DEBUG] Broadcasting state: " << outStr << "\n";
             sendJson(outStr); 
         }
 
@@ -257,7 +250,7 @@ void RealTimeDaemon::controlThreadFunc()
 /**********************************************************/
 void RealTimeDaemon::handleCommand(const std::string& jsonStr)
 {
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Handling command: " << jsonStr << "\n")
+    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Handling command: " << jsonStr << "\n");
     // Parse JSON using JsonCPP
     Json::CharReaderBuilder rb;
     Json::Value root;
@@ -272,7 +265,7 @@ void RealTimeDaemon::handleCommand(const std::string& jsonStr)
     
     std::string cmd = root["cmd"].asString();
     int motorID = root.get("motorID", 1).asInt();
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Command parsed: " << cmd << " for motorID " << motorID << "\n")
+    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Command parsed: " << cmd << " for motorID " << motorID << "\n");
 
     try {
         auto &mot = m_robot.getMotor(motorID);
@@ -377,7 +370,7 @@ void RealTimeDaemon::sendJson(const std::string& jsonStr)
 {
     // Append a newline to ensure the Node side can correctly detect message boundaries.
     std::string jsonWithNewline = jsonStr + "\n";
-    IFDEBUG(std::cout << "[RealTimeDaemon][DEBUG] sendJson called with: " << jsonWithNewline << "\n")
+    IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] sendJson called with: " << jsonWithNewline << "\n");
     
     // Send the JSON string to all connected clients.
     std::lock_guard<std::mutex> lk(m_clientFdsMutex);

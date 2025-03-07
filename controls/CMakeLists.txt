@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 3.10)
 project(armatron_controls)
 
-# DEBUG ON/OFF
-add_definitions(-DDEBUG)
+# DEBUGGING
+# Global Debug Flag
+#add_definitions(-DDEBUG)
+
+# File-Specific Debug Flags
+add_definitions(-DCAN_DEBUG)       # Enable debugging for CANHandler.cpp
+add_definitions(-DREALTIME_DEBUG)     # Enable debugging for MotorInterface.cpp
 
 set(CMAKE_CXX_STANDARD 17)
 
