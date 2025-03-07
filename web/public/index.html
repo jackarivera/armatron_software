@@ -293,7 +293,7 @@
       document.getElementById('temp').innerText = m.temp.toFixed(2);
       document.getElementById('torque').innerText = m.torqueA.toFixed(2);
       document.getElementById('speed').innerText = m.speedDeg_s.toFixed(2);
-      document.getElementById('pos').innerText = (m.posDeg / 10).toFixed(2);
+      document.getElementById('pos').innerText = (m.posDeg / 10).toFixed(6);
       document.getElementById('errFlag').innerText = (m.error && m.error != 0) ? 'YES' : 'NO';
 
       // Update the chart if not paused.

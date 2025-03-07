@@ -39,6 +39,7 @@ function connectToDaemon() {
       }
       try {
         let msg = JSON.parse(line);
+        console.log(`[Node] Received JSON: ${line}`); // Debug print
         if (msg.type === 'motorStates') {
           io.emit('motorStates', msg);
         }
@@ -46,6 +47,10 @@ function connectToDaemon() {
         console.error("[Node] parse error: ", e);
       }
     });
+    // Add an immediate read event to ensure fast reading
+    process.nextTick(() => {
+      client.resume();
+  });
   });
 }
 
