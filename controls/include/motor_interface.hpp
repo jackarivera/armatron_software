@@ -17,6 +17,7 @@ struct MotorState
     double torqueCurrentA  = 0.0; ///< Actual current (like IQ)
     double speedDeg_s      = 0.0; ///< Speed in deg/s
     double positionDeg     = 0.0; ///< Single or multi-turn angle in degrees
+    double encoderVal      = 0.0;
     bool   errorPresent    = false;
     uint8_t errorCode      = 0;
 };

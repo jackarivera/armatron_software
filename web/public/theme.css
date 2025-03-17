@@ -1,0 +1,75 @@
+:root {
+    --primary-color: #00509e;
+    --secondary-color: #003f7f;
+    --background-color: #f5f5f5;
+    --card-background: #ffffff;
+    --text-color: #333;
+    --error-color: red;
+  }
+  
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background: var(--background-color);
+    color: var(--text-color);
+  }
+  
+  .container {
+    background: var(--card-background);
+    border-radius: 5px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+  
+  .card {
+    background: var(--card-background);
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  
+  select {
+    padding: 5px;
+    margin: 5px 0;
+  }
+  
+  button {
+    margin: 5px 0;
+    padding: 5px 10px;
+    background: var(--primary-color);
+    border: none;
+    border-radius: 3px;
+    color: #fff;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background: var(--secondary-color);
+  }
+  
+  .flex-wrapper {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-top: 20px;
+  }
+  
+  .left-column {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    margin-right: 10px;
+  }
+  
+  .right-column {
+    width: 50%;
+  }
+  
+  .error-disconnected {
+    color: var(--error-color);
+    font-weight: bold;
+  }
+  

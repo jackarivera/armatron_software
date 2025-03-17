@@ -3,102 +3,57 @@
 <head>
   <meta charset="UTF-8"/>
   <title>Armatron Motor Tuner</title>
+  <link rel="stylesheet" href="theme.css">
   <script src="/socket.io/socket.io.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background: #f5f5f5;
-      color: #333;
-    }
-    h1, h2 {
-      color: #00509e;
-    }
-
-    /* .container class for main sections with box shadow */
-    .container {
-      background: #fff;
-      border-radius: 5px;
-      padding: 20px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
-    }
-
-    /* For sub-sections that we do not want to have container styling */
-    .sub-section {
-      margin-bottom: 20px;
-    }
-
-    label {
-      margin-right: 5px;
-    }
-    input[type="number"] {
-      width: 100px;
-      margin-right: 10px;
-      padding: 3px;
-    }
-    button {
-      margin: 5px 0;
-      padding: 5px 10px;
-      background: #00509e;
-      border: none;
-      border-radius: 3px;
-      color: #fff;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #003f7f;
-    }
-
-    /* Flex wrapper for the real-time data / position & torque vs. the graph */
-    .flex-wrapper {
-      display: flex;
-      width: 100%;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-top: 20px;
-    }
-    .left-column {
-      width: 50%;
-      display: flex;
-      flex-direction: column;
-      margin-right: 10px; /* small gap on the right side */
-    }
-    .right-column {
-      width: 50%;
-    }
-  </style>
 </head>
 <body>
-  <!-- Top container with everything that was previously combined -->
+  <!-- Control Panel Container -->
   <div class="container">
-    <h1>Motor #1 Control</h1>
-    <button onclick="sendCmd({cmd:'motorOn', motorID:1})">Motor ON</button>
-    <button onclick="sendCmd({cmd:'motorOff', motorID:1})">Motor OFF</button>
-    <button onclick="sendCmd({cmd:'motorStop', motorID:1})">Motor STOP</button>
+    <h1 id="motorHeader">Motor Control</h1>
+    <!-- Dropdown to select joint for commands -->
+    <div class="sub-section">
+      <label for="jointSelectControl">Select Joint for Commands:</label>
+      <select id="jointSelectControl" onchange="updateMotorHeader()">
+        <option value="1">Joint 1</option>
+        <option value="2">Joint 2</option>
+        <option value="3">Joint 3</option>
+        <option value="4">Joint 4</option>
+        <option value="5">Joint 5</option>
+        <option value="6">Joint 6</option>
+        <option value="7">Joint 7</option>
+      </select>
+    </div>
+    <!-- Command Buttons -->
+    <button onclick="sendCmd({cmd:'motorOn', motorID:getSelectedJoint()})">Motor ON</button>
+    <button onclick="sendCmd({cmd:'motorOff', motorID:getSelectedJoint()})">Motor OFF</button>
+    <button onclick="sendCmd({cmd:'motorStop', motorID:getSelectedJoint()})">Motor STOP</button>
+    <button onclick="clearMotorError()">Clear Motor Error</button>
     <hr>
-    <!-- Real-Time Data and Position & Torque Control, side by side with the Motor Data Graph -->
+    <!-- Flex layout for Real-Time Data Cards and Graph -->
     <div class="flex-wrapper">
       <div class="left-column">
-        <!-- Real-Time Data (no container styling) -->
-        <div class="sub-section">
-          <h2>Real-Time Data</h2>
-          <div>Temperature: <span id="temp">--</span></div>
-          <div>Torque: <span id="torque">--</span></div>
-          <div>Speed: <span id="speed">--</span></div>
-          <div>Position: <span id="pos">--</span></div>
-          <div>Error: <span id="errFlag">--</span></div>
-          <div>
-            <label>Position Scaling Factor (Units->360 deg):</label>
-            <input id="pos_scaling_factor" type="number" value="360"/>
+        <h2>Real-Time Data (All Joints)</h2>
+        <!-- Cards for each joint -->
+        <div id="cardsContainer">
+          <!-- These cards will be updated in real time -->
+          <div class="card" id="card-1">
+            <h3>Joint 1</h3>
+            <div>Temperature: <span class="temp">--</span></div>
+            <div>Torque: <span class="torque">--</span></div>
+            <div>Speed: <span class="speed">--</span></div>
+            <div>Single Loop Position: <span class="position">--</span></div>
+            <div>Encoder: <span class="enc">--</span></div>
+            <div>Error: <span class="error">--</span></div>
           </div>
-          <button onclick="clearMotorError()">Clear Motor Error</button>
-          <button onclick="readMotorState1()">Read Motor State1</button>
-          <button onclick="readMotorState2()">Read Motor State2</button>
-          <button onclick="readMotorState3()">Read Motor State3</button>
+          <div class="card" id="card-2"><h3>Joint 2</h3><div class="data">Waiting for data...</div></div>
+          <div class="card" id="card-3"><h3>Joint 3</h3><div class="data">Waiting for data...</div></div>
+          <div class="card" id="card-4"><h3>Joint 4</h3><div class="data">Waiting for data...</div></div>
+          <div class="card" id="card-5"><h3>Joint 5</h3><div class="data">Waiting for data...</div></div>
+          <div class="card" id="card-6"><h3>Joint 6</h3><div class="data">Waiting for data...</div></div>
+          <div class="card" id="card-7"><h3>Joint 7</h3><div class="data">Waiting for data...</div></div>
         </div>
-        <!-- Position & Torque Control (no container styling) -->
+        <!-- Position & Torque Control -->
         <div class="sub-section">
           <h2>Position &amp; Torque Control</h2>
           <div>
@@ -118,17 +73,25 @@
         </div>
       </div>
       <div class="right-column">
-        <!-- Motor Data Graph (no container styling) -->
-        <div class="sub-section">
-          <h2>Motor Data Graph</h2>
-          <button onclick="togglePause()">Pause/Resume Graph</button>
-          <canvas id="myChart" width="300" height="150"></canvas>
-        </div>
+        <!-- Motor Data Graph with joint selector -->
+        <h2>Motor Data Graph</h2>
+        <label for="jointSelectForGraph">Select Joint for Graph:</label>
+        <select id="jointSelectForGraph" onchange="resetChartData()">
+          <option value="1">Joint 1</option>
+          <option value="2">Joint 2</option>
+          <option value="3">Joint 3</option>
+          <option value="4">Joint 4</option>
+          <option value="5">Joint 5</option>
+          <option value="6">Joint 6</option>
+          <option value="7">Joint 7</option>
+        </select>
+        <button onclick="togglePause()">Pause/Resume Graph</button>
+        <canvas id="myChart" width="300" height="150"></canvas>
       </div>
     </div>
   </div>
 
-  <!-- Below remain separate containers with shadows as originally -->
+  <!-- Other controls remain in separate containers -->
   <div class="container">
     <h2>PID Gains (Write to ROM)</h2>
     <label>Angle Kp:</label>
@@ -167,13 +130,21 @@
   <script>
     let socket = io();
     let paused = false;
-    // Store the last commanded value for graphing purposes.
     let lastCommandValue = null;
+
+    // Update header based on selected joint
+    function updateMotorHeader() {
+      let sel = document.getElementById('jointSelectControl').value;
+      document.getElementById('motorHeader').innerText = "Motor #" + sel + " Control";
+    }
+
+    function getSelectedJoint() {
+      return parseInt(document.getElementById("jointSelectControl").value);
+    }
 
     // Send command to Node -> Daemon.
     function sendCmd(obj) {
       socket.emit('sendCommand', obj);
-      // Update lastCommandValue if the command has a value.
       if (obj.value !== undefined) {
         lastCommandValue = obj.value;
       }
@@ -181,18 +152,16 @@
 
     function applyTorque() {
       let val = parseInt(document.getElementById('torqueVal').value);
-      lastCommandValue = val;
-      sendCmd({cmd:'setTorque', motorID:1, value: val});
+      sendCmd({cmd:'setTorque', motorID:getSelectedJoint(), value: val});
     }
 
     function applyPosition() {
       let pos_val = parseInt(document.getElementById('posVal').value * 1000);
       let speed_val = parseInt(document.getElementById('posSpeedVal').value);
       let spin_dir = parseInt(document.getElementById('posSpinDir').value);
-      lastCommandValue = pos_val / 1000;
       sendCmd({
         cmd:'setSingleAngleWithSpeed',
-        motorID:1,
+        motorID:getSelectedJoint(),
         spinDirection: spin_dir,
         angle: pos_val,
         maxSpeed: speed_val
@@ -208,44 +177,33 @@
       let iqKi  = parseInt(document.getElementById('iqKi').value);
       sendCmd({
         cmd:'writePID_ROM',
-        motorID:1,
+        motorID:getSelectedJoint(),
         angKp, angKi, spdKp, spdKi, iqKp, iqKi
       });
     }
 
     function readEncoder() {
-      sendCmd({cmd:'readEncoder', motorID:1});
+      sendCmd({cmd:'readEncoder', motorID:getSelectedJoint()});
     }
     function writeEncoderZero() {
       let val = parseInt(document.getElementById('encoderVal').value);
-      sendCmd({cmd:'writeEncoderZero', motorID:1, encoderValue: val});
+      sendCmd({cmd:'writeEncoderZero', motorID:getSelectedJoint(), encoderValue: val});
     }
     function writeCurrentPosZero() {
-      sendCmd({cmd:'writeCurrentPosZero', motorID:1});
+      sendCmd({cmd:'writeCurrentPosZero', motorID:getSelectedJoint()});
     }
-
     function writeAcceleration() {
       let val = parseInt(document.getElementById('accelVal').value);
-      sendCmd({cmd:'writeAcceleration', motorID:1, accelVal: val});
+      sendCmd({cmd:'writeAcceleration', motorID:getSelectedJoint(), accelVal: val});
     }
     function readAcceleration() {
-      sendCmd({cmd:'readAcceleration', motorID:1});
+      sendCmd({cmd:'readAcceleration', motorID:getSelectedJoint()});
     }
-
     function clearMotorError() {
-      sendCmd({cmd:'clearMotorError', motorID:1});
-    }
-    function readMotorState1() {
-      sendCmd({cmd:'readMotorState1', motorID:1});
-    }
-    function readMotorState2() {
-      sendCmd({cmd:'readMotorState2', motorID:1});
-    }
-    function readMotorState3() {
-      sendCmd({cmd:'readMotorState3', motorID:1});
+      sendCmd({cmd:'clearMotorError', motorID:getSelectedJoint()});
     }
 
-    // Chart.js configuration with three datasets.
+    // Chart.js configuration with four datasets.
     let ctx = document.getElementById('myChart').getContext('2d');
     let chartData = {
       labels: [],
@@ -268,6 +226,12 @@
           borderColor: 'green',
           borderDash: [5,5],
           fill: false,
+        },
+        {
+          label: 'Torque',
+          data: [],
+          borderColor: 'purple',
+          fill: false,
         }
       ]
     };
@@ -285,26 +249,47 @@
       paused = !paused;
     }
 
+    // Reset chart data when switching joints on the graph
+    function resetChartData() {
+      chartData.labels = [];
+      chartData.datasets.forEach(ds => ds.data = []);
+      myChart.update();
+    }
+
     // Listen for motorStates from daemon.
     socket.on('motorStates', (msg) => {
-      let m = msg.motors["1"];
-      if (!m) return;
-      // Update displayed motor state values.
-      document.getElementById('temp').innerText = m.temp.toFixed(2);
-      document.getElementById('torque').innerText = m.torqueA.toFixed(2);
-      document.getElementById('speed').innerText = m.speedDeg_s.toFixed(2);
-      document.getElementById('pos').innerText = (m.posDeg / 10).toFixed(6);
-      document.getElementById('errFlag').innerText = (m.error && m.error != 0) ? 'YES' : 'NO';
+      // Update each joint card.
+      for (let i = 1; i <= 7; i++) {
+        let card = document.getElementById("card-" + i);
+        let motor = msg.motors[String(i)];
+        if (motor) {
+          // Create or update card content for the joint.
+          card.innerHTML = `
+            <h3>Joint ${i}</h3>
+            <div>Temperature: <span class="temp">${motor.temp.toFixed(2)}</span></div>
+            <div>Torque: <span class="torque">${motor.torqueA.toFixed(2)}</span></div>
+            <div>Speed: <span class="speed">${motor.speedDeg_s.toFixed(2)}</span></div>
+            <div>Single Loop Position: <span class="position">${(motor.posDeg / 10).toFixed(6)}</span></div>
+            <div>Encoder: <span class="enc">${(motor.encoder_val).toFixed(6)}</span></div>
+            <div>Error: <span class="error">${(motor.error && motor.error != 0) ? 'YES' : 'NO'}</span></div>
+          `;
+        } else {
+          // Show disconnected status.
+          card.innerHTML = `<h3>Joint ${i} - <span class="error-disconnected">Disconnected</span></h3>`;
+        }
+      }
 
-      // Update the chart if not paused.
-      if (!paused) {
+      // Update the graph for the selected joint.
+      let selectedGraphJoint = document.getElementById("jointSelectForGraph").value;
+      let m = msg.motors[selectedGraphJoint];
+      if (m && !paused) {
         let now = new Date().toLocaleTimeString();
         chartData.labels.push(now);
         chartData.datasets[0].data.push(m.posDeg / 10);
-        chartData.datasets[1].data.push(0);
+        chartData.datasets[1].data.push(m.speedDeg_s);
         chartData.datasets[2].data.push(lastCommandValue !== null ? lastCommandValue : null);
+        chartData.datasets[3].data.push(m.torqueA);
 
-        // Keep the dataset at a max of 200 data points
         if (chartData.labels.length > 200) {
           chartData.labels.shift();
           chartData.datasets.forEach(ds => ds.data.shift());

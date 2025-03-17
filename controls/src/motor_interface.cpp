@@ -257,9 +257,9 @@ void Motor::writeEncoderOffset(uint16_t offset)
 {
     // 0x91 => write offset to ROM
     // data => [0x91,0,0,0,0,0, offLo, offHi]
-    std::vector<uint8_t> d(8,0);
-    d[6] = static_cast<uint8_t>( offset & 0xFF );
-    d[7] = static_cast<uint8_t>((offset >> 8) & 0xFF);
+    std::vector<uint8_t> d(7,0);
+    d[5] = static_cast<uint8_t>( offset & 0xFF );
+    d[6] = static_cast<uint8_t>((offset >> 8) & 0xFF);
 
     sendCmd(0x91, d);
     readFrameForCommand(0x91);
@@ -268,7 +268,7 @@ void Motor::writeEncoderOffset(uint16_t offset)
 void Motor::writeCurrentPosAsZero()
 {
     // 0x19 => write current pos to zero
-    std::vector<uint8_t> d(8,0);
+    std::vector<uint8_t> d(7,0);
     sendCmd(0x19, d);
     readFrameForCommand(0x19);
 }
@@ -374,7 +374,7 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
                     m_state.temperatureC = t;
                     m_state.torqueCurrentA = iq; 
                     m_state.speedDeg_s = spd * 1.0;
-                    m_state.positionDeg = enc * (360.0 / 65535.0);
+                    m_state.encoderVal = enc;
                     m_state.errorPresent = false;
                     m_state.errorCode = 0;
                 }
@@ -401,7 +401,7 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
                     int16_t enc    = unpack16(frame, 2);
                     int16_t encRaw = unpack16(frame, 4);
                     int16_t off    = unpack16(frame, 6);
-                    m_state.positionDeg = enc * (360.0 / 65535.0); // adjust per your encoder spec
+                    m_state.encoderVal = enc; 
                 }
                 break;
             }
@@ -444,7 +444,7 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
                     m_state.temperatureC = t;
                     m_state.torqueCurrentA = iq;
                     m_state.speedDeg_s = spd * 1.0;
-                    //m_state.positionDeg = e * (360.0 / 65535.0);
+                    m_state.encoderVal = e;
                 }
                 break;
             }

@@ -220,7 +220,7 @@ void RealTimeDaemon::controlThreadFunc()
             jroot["type"] = "motorStates";
 
             // gather each motor’s state
-            for (int i = 1; i < 2; i++) {
+            for (int i = 1; i < 3; i++) {
                 auto &mot = m_robot.getMotor(i);
                 auto st   = mot.getState();
                 Json::Value mjs;
@@ -229,6 +229,7 @@ void RealTimeDaemon::controlThreadFunc()
                 mjs["speedDeg_s"] = st.speedDeg_s;
                 mjs["posDeg"]     = st.positionDeg;
                 mjs["error"]      = (st.errorPresent ? 1 : 0);
+                mjs["encoder_val"] = st.encoderVal;
                 jroot["motors"][std::to_string(i)] = mjs;
             }
 
