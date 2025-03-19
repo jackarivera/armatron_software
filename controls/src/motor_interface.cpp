@@ -498,9 +498,9 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
                 if (frame.can_dlc >= 8) {
                     int32_t angle = unpack32(frame, 4);
                     // Assume angle is in 0.01 degrees per LSB.
-                    m_state.positionDeg = angle * 0.01;
-                    m_state.positionRad_Mapped = motorRawToRadians(m_state.positionDeg);
-                    m_state.positionDeg_Mapped = radiansToDegrees(m_state.positionRad_Mapped);
+                    m_state.positionDeg = angle * 0.001;
+                    //m_state.positionRad_Mapped = motorRawToRadians(m_state.positionDeg);
+                    //m_state.positionDeg_Mapped = radiansToDegrees(m_state.positionRad_Mapped);
                 }
                 break;
             }
@@ -510,7 +510,7 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
                 // Assume response: [0x94, 0, 0, ang0, ang1, ang2, ang3, 0]
                 if (frame.can_dlc >= 8) {
                     int32_t angle = unpack32(frame, 4);
-                    m_state.positionDeg = angle * 0.01;
+                    m_state.positionDeg = angle * 0.001;
                     m_state.positionRad_Mapped = motorRawToRadians(m_state.positionDeg);
                     m_state.positionDeg_Mapped = radiansToDegrees(m_state.positionRad_Mapped);
                 }
