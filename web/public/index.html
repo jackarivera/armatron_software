@@ -45,6 +45,9 @@
             <div>Single Loop Position: <span class="position">--</span></div>
             <div>Encoder: <span class="enc">--</span></div>
             <div>Error: <span class="error">--</span></div>
+            <br>
+            <div>Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
+            <div>Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
           </div>
           <div class="card" id="card-2"><h3>Joint 2</h3><div class="data">Waiting for data...</div></div>
           <div class="card" id="card-3"><h3>Joint 3</h3><div class="data">Waiting for data...</div></div>
@@ -269,9 +272,12 @@
             <div>Temperature: <span class="temp">${motor.temp.toFixed(2)}</span></div>
             <div>Torque: <span class="torque">${motor.torqueA.toFixed(2)}</span></div>
             <div>Speed: <span class="speed">${motor.speedDeg_s.toFixed(2)}</span></div>
-            <div>Single Loop Position: <span class="position">${(motor.posDeg / 10).toFixed(6)}</span></div>
+            <div>Single Loop Position: <span class="position">${(motor.posDeg).toFixed(6)}</span></div>
             <div>Encoder: <span class="enc">${(motor.encoder_val).toFixed(6)}</span></div>
             <div>Error: <span class="error">${(motor.error && motor.error != 0) ? 'YES' : 'NO'}</span></div>
+            <br>
+            <div>Remapped Angle [rad]: <span class="pos_remapped_rad">${(motor.positionRad_Mapped).toFixed(6)}</span></div>
+            <div>Remapped Angle [deg]: <span class="pos_remapped_deg">${(motor.positionDeg_Mapped).toFixed(6)}</span></div>
           `;
         } else {
           // Show disconnected status.
@@ -285,7 +291,7 @@
       if (m && !paused) {
         let now = new Date().toLocaleTimeString();
         chartData.labels.push(now);
-        chartData.datasets[0].data.push(m.posDeg / 10);
+        chartData.datasets[0].data.push(m.posDeg);
         chartData.datasets[1].data.push(m.speedDeg_s);
         chartData.datasets[2].data.push(lastCommandValue !== null ? lastCommandValue : null);
         chartData.datasets[3].data.push(m.torqueA);
