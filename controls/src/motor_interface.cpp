@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <cmath>
 #include <chrono>
+#include <algorithm>
 
 namespace
 {
@@ -40,10 +41,25 @@ namespace
             f.data[loIdx]
         );
     }
+
+    // Define a constant for 2*pi
+    const double TWO_PI = 2.0 * M_PI;
+
+    // Helper conversion functions
+    inline double degreesToRadians(double degrees) {
+        return degrees * M_PI / 180.0;
+    }
+
+    inline double radiansToDegrees(double radians) {
+        return radians * 180.0 / M_PI;
+    }
 } // end anon
 
-Motor::Motor(uint8_t motorId, CANHandler& canRef, float reduction_ratio, float max_torque)
-    : m_motorId(motorId), m_can(canRef), m_reduction_ratio(reduction_ratio), m_max_torque(max_torque)
+Motor::Motor(uint8_t motorId, CANHandler& canRef, float single_loop_max_ang_raw, float Nm_to_iq_m, float Nm_to_iq_b, float single_loop_ang_limit_low, float single_loop_ang_limit_high, bool is_differential)
+    : m_motorId(motorId), m_can(canRef), m_single_loop_max_ang_raw(single_loop_max_ang_raw), 
+    m_Nm_to_iq_m(Nm_to_iq_m), m_Nm_to_iq_b(Nm_to_iq_b), 
+    m_single_loop_ang_limit_low(single_loop_ang_limit_low), m_single_loop_ang_limit_high(single_loop_ang_limit_high), 
+    m_is_differential(is_differential)
 {
     // Clear state
     std::memset(&m_state, 0, sizeof(m_state));
@@ -322,6 +338,24 @@ void Motor::readState3()
     readFrameForCommand(0x9D);
 }
 
+// MOTOR RANGE MAPPING FUNCTIONS
+// Forward function:
+// Maps raw motor units (0 to maxUnits) to radians [0, 2*pi).
+// No clamping is done because we want the exact value reported from the motor.
+float Motor::motorRawToRadians(float rawValue) {
+    return (static_cast<float>(rawValue) / Motor::m_single_loop_max_ang_raw) * TWO_PI;
+}
+
+// Reverse function:
+// Converts a radian value back to raw motor units.
+// The computed raw value is then clamped to the active range [limitLow, limitHigh].
+float Motor::motorRadiansToRaw(float radians) {
+    // Compute the raw value (rounding to the nearest integer)
+    float rawValue = static_cast<float>((radians / TWO_PI) * Motor::m_single_loop_max_ang_raw);
+    // Clamp the raw value to the allowed active range
+    return std::clamp(rawValue, Motor::m_single_loop_ang_limit_low, Motor::m_single_loop_ang_limit_high);
+}
+
 //-------------------------------------------
 //  Private Helpers
 //-------------------------------------------
@@ -465,6 +499,8 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
                     int32_t angle = unpack32(frame, 4);
                     // Assume angle is in 0.01 degrees per LSB.
                     m_state.positionDeg = angle * 0.01;
+                    m_state.positionRad_Mapped = motorRawToRadians(m_state.positionDeg);
+                    m_state.positionDeg_Mapped = radiansToDegrees(m_state.positionRad_Mapped);
                 }
                 break;
             }
@@ -475,6 +511,8 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
                 if (frame.can_dlc >= 8) {
                     int32_t angle = unpack32(frame, 4);
                     m_state.positionDeg = angle * 0.01;
+                    m_state.positionRad_Mapped = motorRawToRadians(m_state.positionDeg);
+                    m_state.positionDeg_Mapped = radiansToDegrees(m_state.positionRad_Mapped);
                 }
                 break;
             }

@@ -17,6 +17,8 @@ struct MotorState
     double torqueCurrentA  = 0.0; ///< Actual current (like IQ)
     double speedDeg_s      = 0.0; ///< Speed in deg/s
     double positionDeg     = 0.0; ///< Single or multi-turn angle in degrees
+    double positionRad_Mapped = 0.0;
+    double positionDeg_Mapped = 0.0;
     double encoderVal      = 0.0;
     bool   errorPresent    = false;
     uint8_t errorCode      = 0;
@@ -36,10 +38,14 @@ public:
     /**
      * @param motorId  The motor's assigned ID on the bus (1..32)
      * @param canRef   Reference to a CANHandler. 
-     * @param reduction_ratio Motor reduction ratio (reduction_ratio:1)
-     * @param max_torque Max torque of each motor in Nm
+     * @param single_loop_max_ang_raw Single loop maximum raw angle (unitless)
+     * @param Nm_to_iq_m Newton-meters to IQ Current Value (Taken from spreadsheet calculation) [m]
+     * @param Nm_to_iq_b Newton-meters to IQ Current Value Offset (y-int) (Taken from spreadsheet calculation) [b]
+     * @param single_loop_ang_limit_low Single loop minimum allowable raw angle (unitless)
+     * @param single_loop_ang_limit_high Single loop maximum allowable raw angle (unitless)
+     * @param is_differential flag for if the motor controls the differential wrist (last two joints)
      */
-    Motor(uint8_t motorId, CANHandler& canRef, float reduction_ratio, float max_torque);
+    Motor(uint8_t motorId, CANHandler& canRef, float single_loop_max_ang_raw, float Nm_to_iq_m, float Nm_to_iq_b, float single_loop_ang_limit_low, float single_loop_ang_limit_high, bool is_differential);
 
     /**
      * @brief Retrieve the last known motor state (populated from read ops).
@@ -185,6 +191,14 @@ public:
      */
     void readState3();
 
+    /**
+     * @brief Convert from raw units (Motor Units) to Radians. Range and limits set by constructor.
+     */
+    float motorRawToRadians(float rawValue);
+    /**
+     * @brief Convert from Radians to raw units (Motor Units). Range and limits set by constructor.
+     */
+    float motorRadiansToRaw(float radians);
 private:
     uint8_t    m_motorId;
     CANHandler &m_can;
@@ -193,6 +207,13 @@ private:
     float m_max_torque       = 0.0;
     float m_rated_torque     = 0.0;
     float m_torque_constant  = 0.0;
+    // Use below - Maybe get rid of ^
+    float m_single_loop_max_ang_raw = 0.0;
+    float m_Nm_to_iq_m = 0.0;
+    float m_Nm_to_iq_b = 0.0;
+    float m_single_loop_ang_limit_low = 0.0;
+    float m_single_loop_ang_limit_high = 0.0;
+    bool m_is_differential = 0.0;
 
     /**
      * @brief Helper: Single motor ID = 0x140 + m_motorId

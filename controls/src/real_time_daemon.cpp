@@ -230,6 +230,8 @@ void RealTimeDaemon::controlThreadFunc()
                 mjs["posDeg"]     = st.positionDeg;
                 mjs["error"]      = (st.errorPresent ? 1 : 0);
                 mjs["encoder_val"] = st.encoderVal;
+                mjs["positionRad_Mapped"] = st.positionRad_Mapped;
+                mjs["positionDeg_Mapped"] = st.positionDeg_Mapped;
                 jroot["motors"][std::to_string(i)] = mjs;
             }
 
