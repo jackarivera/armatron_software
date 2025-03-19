@@ -220,7 +220,7 @@ void RealTimeDaemon::controlThreadFunc()
             jroot["type"] = "motorStates";
 
             // gather each motor’s state
-            for (int i = 1; i < 3; i++) {
+            for (int i = 1; i < 5; i++) {
                 auto &mot = m_robot.getMotor(i);
                 auto st   = mot.getState();
                 Json::Value mjs;

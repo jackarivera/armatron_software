@@ -10,9 +10,9 @@ RobotInterface::RobotInterface(CANHandler& canRef)
     // Joint 2 - MG8015 - Mid Shoulder
     m_motors.emplace_back(static_cast<uint8_t>(2), canRef, MG8015_SINGLE_TURN_DEG_SCALE_MAX, JOINT_2_NM_TO_IQ_M, JOINT_2_NM_TO_IQ_B, JOINT_2_ANGLE_LIMIT_LOW, JOINT_2_ANGLE_LIMIT_HIGH, false);
     // // Joint 3 - MG8008 - Brachium Shoulder
-    // m_motors.emplace_back(static_cast<uint8_t>(3), canRef, MG8008_SINGLE_TURN_DEG_SCALE_MAX, JOINT_3_NM_TO_IQ_M, JOINT_3_NM_TO_IQ_B, JOINT_3_ANGLE_LIMIT_LOW, JOINT_3_ANGLE_LIMIT_HIGH, false);
+    m_motors.emplace_back(static_cast<uint8_t>(3), canRef, MG8008_SINGLE_TURN_DEG_SCALE_MAX, JOINT_3_NM_TO_IQ_M, JOINT_3_NM_TO_IQ_B, JOINT_3_ANGLE_LIMIT_LOW, JOINT_3_ANGLE_LIMIT_HIGH, false);
     // // Joint 4 - MG8008 - Elbow Flexor
-    // m_motors.emplace_back(static_cast<uint8_t>(4), canRef, MG8008_SINGLE_TURN_DEG_SCALE_MAX, JOINT_4_NM_TO_IQ_M, JOINT_4_NM_TO_IQ_B, JOINT_4_ANGLE_LIMIT_LOW, JOINT_4_ANGLE_LIMIT_HIGH, false);
+    m_motors.emplace_back(static_cast<uint8_t>(4), canRef, MG8008_SINGLE_TURN_DEG_SCALE_MAX, JOINT_4_NM_TO_IQ_M, JOINT_4_NM_TO_IQ_B, JOINT_4_ANGLE_LIMIT_LOW, JOINT_4_ANGLE_LIMIT_HIGH, false);
     // // Joint 5 - MG4010 - Forearm Rotator
     // m_motors.emplace_back(static_cast<uint8_t>(5), canRef, MG4010_SINGLE_TURN_DEG_SCALE_MAX, JOINT_5_NM_TO_IQ_M, JOINT_5_NM_TO_IQ_B, JOINT_5_ANGLE_LIMIT_LOW, JOINT_5_ANGLE_LIMIT_HIGH, false);
     // // Joint 6 - MG4005 - Wrist Differential #1 
