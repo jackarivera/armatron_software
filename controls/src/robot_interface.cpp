@@ -1,6 +1,7 @@
 #include "robot_interface.hpp"
 #include "motor_defs.hpp"
 #include <stdexcept>
+#include <iostream>
 
 RobotInterface::RobotInterface(CANHandler& canRef)
 {
@@ -42,6 +43,7 @@ void RobotInterface::updateAll()
 void RobotInterface::setMultiJointAngles(std::vector<float> joint_angles, std::vector<float> joint_speeds) {
     for (int i = 1; i <= joint_angles.size(); i++){
         float ang_target_rad = joint_angles.at(i-1);
+        std::cout << "[RobotInterface] Multi Joint Command Received | Motor: " << i << " | Target (rad): " << ang_target_rad << "\n";
         if (ang_target_rad >= 0.0) {
             auto &curr_mot = m_motors[i-1];
             float ang_target_raw = curr_mot.motorRadiansToRaw(joint_angles.at(i-1));
@@ -49,6 +51,10 @@ void RobotInterface::setMultiJointAngles(std::vector<float> joint_angles, std::v
             float maxSpeed = joint_speeds.at(i-1);
             int spinDir = (ang_target_raw - ang_curr_raw) < 0 ? 1 : 0;
             m_motors[i-1].setSingleAngleWithSpeed(static_cast<uint8_t>(spinDir), static_cast<int32_t>(ang_target_raw), static_cast<uint16_t>(maxSpeed));
+            std::cout << "                 Target Angle Raw: " << ang_target_raw << "\n";
+            std::cout << "                 Current Angle Raw: " << ang_curr_raw << "\n";
+            std::cout << "                 MaxSpeed: " << maxSpeed << "\n";
+            std::cout << "                 Spin Direction: " << spinDir << "\n";
         }
     }
 }

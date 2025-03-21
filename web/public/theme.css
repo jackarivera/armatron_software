@@ -105,3 +105,56 @@ button:hover {
   color: var(--error-color);
   font-weight: bold;
 }
+
+/* Styling for the multi joint control section */
+#multiJointControl {
+  margin-bottom: 20px;
+  padding: 15px;
+  border: 2px solid var(--primary-color);
+  border-radius: 5px;
+  background: var(--card-background);
+}
+
+.multi-joint-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.multi-joint-column {
+  flex: 1;
+  min-width: 120px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 5px;
+  background: #fafafa;
+  text-align: center;
+}
+
+.multi-joint-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+#emergencyStop.estop {
+  background: red;
+  color: white;
+  font-weight: bold;
+}
+
+.saved-sets {
+  margin-top: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.saved-sets input,
+.saved-sets select,
+.saved-sets button {
+  margin: 5px;
+}
+

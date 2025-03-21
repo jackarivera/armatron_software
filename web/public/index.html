@@ -10,7 +10,78 @@
 <body>
   <div class="container">
     <h1>Armatron Motor Tuner</h1>
-    
+
+    <!-- New Multi Joint Setpoints Section -->
+    <div id="multiJointControl" class="container">
+      <h2>Multi Joint Setpoints</h2>
+      <div class="multi-joint-grid">
+        <!-- One column per joint -->
+        <div class="multi-joint-column" data-joint="1">
+          <h3>Joint 1</h3>
+          <label>Angle (deg):</label>
+          <input type="number" id="multiAngle-1" value="-1">
+          <label>Max Speed (dps):</label>
+          <input type="number" id="multiSpeed-1" value="100">
+        </div>
+        <div class="multi-joint-column" data-joint="2">
+          <h3>Joint 2</h3>
+          <label>Angle (deg):</label>
+          <input type="number" id="multiAngle-2" value="-1">
+          <label>Max Speed (dps):</label>
+          <input type="number" id="multiSpeed-2" value="100">
+        </div>
+        <div class="multi-joint-column" data-joint="3">
+          <h3>Joint 3</h3>
+          <label>Angle (deg):</label>
+          <input type="number" id="multiAngle-3" value="-1">
+          <label>Max Speed (dps):</label>
+          <input type="number" id="multiSpeed-3" value="100">
+        </div>
+        <div class="multi-joint-column" data-joint="4">
+          <h3>Joint 4</h3>
+          <label>Angle (deg):</label>
+          <input type="number" id="multiAngle-4" value="-1">
+          <label>Max Speed (dps):</label>
+          <input type="number" id="multiSpeed-4" value="100">
+        </div>
+        <div class="multi-joint-column" data-joint="5">
+          <h3>Joint 5</h3>
+          <label>Angle (deg):</label>
+          <input type="number" id="multiAngle-5" value="-1">
+          <label>Max Speed (dps):</label>
+          <input type="number" id="multiSpeed-5" value="100">
+        </div>
+        <div class="multi-joint-column" data-joint="6">
+          <h3>Joint 6</h3>
+          <label>Angle (deg):</label>
+          <input type="number" id="multiAngle-6" value="-1">
+          <label>Max Speed (dps):</label>
+          <input type="number" id="multiSpeed-6" value="100">
+        </div>
+        <div class="multi-joint-column" data-joint="7">
+          <h3>Joint 7</h3>
+          <label>Angle (deg):</label>
+          <input type="number" id="multiAngle-7" value="-1">
+          <label>Max Speed (dps):</label>
+          <input type="number" id="multiSpeed-7" value="100">
+        </div>
+      </div>
+      <div class="multi-joint-actions">
+        <button id="sendMultiJoint" onclick="sendMultiJointCommand()">Send Multi Joint Command</button>
+        <button id="emergencyStop" class="estop" onclick="emergencyStop()">ESTOP</button>
+      </div>
+      <div class="saved-sets">
+        <h3>Saved Angle Sets</h3>
+        <label for="setName">Set Name:</label>
+        <input type="text" id="setName" placeholder="Name this set">
+        <button onclick="saveCurrentSet()">Save Set</button>
+        <label for="savedSetsDropdown">Load Set:</label>
+        <select id="savedSetsDropdown" onchange="loadSavedSet()">
+          <option value="">-- Select Saved Set --</option>
+        </select>
+      </div>
+    </div>
+
     <!-- Responsive Cards Grid for 7 joints -->
     <div id="cardsGrid" class="cards-grid">
       <!-- Card for Joint 1 -->
@@ -383,6 +454,70 @@
         }
       });
     }
+
+    // Multi Joint Command Functions
+    function sendMultiJointCommand() {
+      let angles = [];
+      let speeds = [];
+      for (let i = 1; i <= 7; i++) {
+        // Read angle in degrees and convert to radians
+        let angleDeg = parseFloat(document.getElementById('multiAngle-' + i).value);
+        let angleRad = angleDeg * Math.PI / 180;
+        angles.push(angleRad);
+        speeds.push(parseFloat(document.getElementById('multiSpeed-' + i).value));
+      }
+      socket.emit('sendCommand', { cmd: 'setMultiJointAngles', angles: angles, speeds: speeds });
+    }
+    
+    function emergencyStop() {
+      // Send motorStop command to all joints
+      for (let i = 1; i <= 7; i++) {
+        socket.emit('sendCommand', { cmd: 'motorStop', motorID: i });
+      }
+    }
+    
+    function saveCurrentSet() {
+      let setName = document.getElementById('setName').value.trim();
+      if (!setName) {
+        alert("Please provide a name for the set.");
+        return;
+      }
+      let angles = [];
+      let speeds = [];
+      for (let i = 1; i <= 7; i++) {
+        let angleDeg = document.getElementById('multiAngle-' + i).value;
+        let speed = document.getElementById('multiSpeed-' + i).value;
+        angles.push(angleDeg);
+        speeds.push(speed);
+      }
+      savedSets[setName] = { angles: angles, speeds: speeds };
+      updateSavedSetsDropdown();
+      alert("Set saved as '" + setName + "'");
+    }
+    
+    function updateSavedSetsDropdown() {
+      let dropdown = document.getElementById('savedSetsDropdown');
+      // Clear all options except the first placeholder
+      dropdown.options.length = 1;
+      for (let name in savedSets) {
+        let option = document.createElement("option");
+        option.value = name;
+        option.text = name;
+        dropdown.add(option);
+      }
+    }
+    
+    function loadSavedSet() {
+      let dropdown = document.getElementById('savedSetsDropdown');
+      let selectedName = dropdown.value;
+      if (selectedName && savedSets[selectedName]) {
+        let set = savedSets[selectedName];
+        for (let i = 1; i <= 7; i++) {
+          document.getElementById('multiAngle-' + i).value = set.angles[i-1];
+          document.getElementById('multiSpeed-' + i).value = set.speeds[i-1];
+        }
+      }
+    }
     
     // Local command functions for each card
     function sendLocalCmd(obj) {
@@ -398,7 +533,7 @@
     }
     
     function applyLocalPosition(jointId) {
-      let pos_val = parseInt(document.getElementById('posVal-' + jointId).value * 1000);
+      let pos_val = parseInt(document.getElementById('posVal-' + jointId).value);
       let speed_val = parseInt(document.getElementById('posSpeedVal-' + jointId).value);
       let spin_dir = parseInt(document.getElementById('posSpinDir-' + jointId).value);
       sendLocalCmd({

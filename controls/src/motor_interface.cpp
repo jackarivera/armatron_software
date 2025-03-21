@@ -162,11 +162,12 @@ void Motor::setSingleAngleWithSpeed(uint8_t spinDirection, int32_t angle, uint16
 {
     // 0xA6 => single angle 2
     // data => [dir, spdLo,spdHi, angLo, angHi, angHi2, angHi3]
+    int32_t scaled_angle = angle * 1000; // Scale to motor expectation
     std::vector<uint8_t> d(7, 0);
     d[0] = spinDirection;
     d[1] = static_cast<uint8_t>( maxSpeed & 0xFF );
     d[2] = static_cast<uint8_t>((maxSpeed >> 8) & 0xFF );
-    pack32(d, 3, angle);
+    pack32(d, 3, scaled_angle);
 
     sendCmd(0xA6, d);
     readFrameForCommand(0xA6);
@@ -343,7 +344,7 @@ void Motor::readState3()
 // Maps raw motor units (0 to maxUnits) to radians [0, 2*pi).
 // No clamping is done because we want the exact value reported from the motor.
 float Motor::motorRawToRadians(float rawValue) {
-    return (static_cast<float>(rawValue) / Motor::m_single_loop_max_ang_raw) * TWO_PI;
+    return (static_cast<float>(rawValue) / m_single_loop_max_ang_raw) * TWO_PI;
 }
 
 // Reverse function:
@@ -351,9 +352,11 @@ float Motor::motorRawToRadians(float rawValue) {
 // The computed raw value is then clamped to the active range [limitLow, limitHigh].
 float Motor::motorRadiansToRaw(float radians) {
     // Compute the raw value (rounding to the nearest integer)
-    float rawValue = static_cast<float>((radians / TWO_PI) * Motor::m_single_loop_max_ang_raw);
-    // Clamp the raw value to the allowed active range
-    return std::clamp(rawValue, Motor::m_single_loop_ang_limit_low, Motor::m_single_loop_ang_limit_high);
+    float rawValue = static_cast<float>((radians / TWO_PI) * m_single_loop_max_ang_raw);
+    std::cout << "[MotorInterface] called motorRadiansToRaw() w/ output: " << std::clamp(rawValue, m_single_loop_ang_limit_low, m_single_loop_ang_limit_high) << "\n";
+    std::cout << "[MotorInterface] called motorRadiansToRaw() w/ output: " << std::clamp(rawValue, m_single_loop_ang_limit_low, m_single_loop_ang_limit_high) << "\n";
+    // Clamp the raw value to the allowed active range   
+    return std::clamp(rawValue, m_single_loop_ang_limit_low, m_single_loop_ang_limit_high);
 }
 
 //-------------------------------------------

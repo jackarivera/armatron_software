@@ -238,7 +238,7 @@ void RealTimeDaemon::controlThreadFunc()
             Json::StreamWriterBuilder builder;
             builder["indentation"] = ""; // Force compact, single-line output.
             std::string outStr = Json::writeString(builder, jroot);
-            std::cout << "[RealTimeDaemon][DEBUG] Broadcasting state: " << outStr << "\n";
+            IFRTDEBUG(std::cout << "[RealTimeDaemon][DEBUG] Broadcasting state: " << outStr << "\n");
             sendJson(outStr); 
         }
 
@@ -303,11 +303,25 @@ void RealTimeDaemon::handleCommand(const std::string& jsonStr)
             int spin = root.get("spinDirection", 0).asInt();
             int angle = root.get("angle", 0).asInt();
             int maxSpeed = root.get("maxSpeed", 0).asInt();
+            std::cout << "[RealTimeDaemon] Received setSingleAngleWithSpeed | Spin: " << spin << " | Angle: " << angle << "\n";
             mot.setSingleAngleWithSpeed(static_cast<uint8_t>(spin), static_cast<int32_t>(angle), static_cast<uint16_t>(maxSpeed));
         } else if (cmd == "setMultiJointAngles") {
-            std::vector<float> angles = {0}; 
-            std::vector<float> speeds = {0};
-            m_robot.setMultiJointAngles(angles, speeds);
+            std::vector<float> angles;
+            std::vector<float> speeds;
+            if (root.isMember("angles") && root["angles"].isArray() &&
+                root.isMember("speeds") && root["speeds"].isArray()) {
+                const Json::Value anglesJson = root["angles"];
+                const Json::Value speedsJson = root["speeds"];
+                for (Json::ArrayIndex i = 0; i < anglesJson.size(); i++) {
+                    angles.push_back(anglesJson[i].asFloat());
+                }
+                for (Json::ArrayIndex i = 0; i < speedsJson.size(); i++) {
+                    speeds.push_back(speedsJson[i].asFloat());
+                }
+                m_robot.setMultiJointAngles(angles, speeds);
+            } else {
+                std::cerr << "[RealTimeDaemon] setMultiJointAngles: Invalid or missing angles/speeds arrays." << std::endl;
+            }
         } else if (cmd == "setIncrementAngle") {
             int value = root.get("incAngle", 0).asInt();
             mot.setIncrementAngle(static_cast<int32_t>(value));

@@ -29,23 +29,23 @@
 #define MG4005_SINGLE_TURN_DEG_SCALE_MAX 360
 
 // Per Joint Parameters
-#define JOINT_1_ANGLE_LIMIT_LOW 0 // Raw Units
-#define JOINT_1_ANGLE_LIMIT_HIGH 0 // Raw Units
+#define JOINT_1_ANGLE_LIMIT_LOW 5 // Raw Units
+#define JOINT_1_ANGLE_LIMIT_HIGH 355 // Raw Units
 #define JOINT_1_NM_TO_IQ_M 0 // [iq/Nm]
 #define JOINT_1_NM_TO_IQ_B 0 // [iq]
 
-#define JOINT_2_ANGLE_LIMIT_LOW 0
-#define JOINT_2_ANGLE_LIMIT_HIGH 0
+#define JOINT_2_ANGLE_LIMIT_LOW 5
+#define JOINT_2_ANGLE_LIMIT_HIGH 195
 #define JOINT_2_NM_TO_IQ_M 0 // [iq/Nm]
 #define JOINT_2_NM_TO_IQ_B 0 // [iq]
 
-#define JOINT_3_ANGLE_LIMIT_LOW 0
-#define JOINT_3_ANGLE_LIMIT_HIGH 0
+#define JOINT_3_ANGLE_LIMIT_LOW 5
+#define JOINT_3_ANGLE_LIMIT_HIGH 355
 #define JOINT_3_NM_TO_IQ_M 0 // [iq/Nm]
 #define JOINT_3_NM_TO_IQ_B 0 // [iq]
 
-#define JOINT_4_ANGLE_LIMIT_LOW 0
-#define JOINT_4_ANGLE_LIMIT_HIGH 0
+#define JOINT_4_ANGLE_LIMIT_LOW 5
+#define JOINT_4_ANGLE_LIMIT_HIGH 230
 #define JOINT_4_NM_TO_IQ_M 0 // [iq/Nm]
 #define JOINT_4_NM_TO_IQ_B 0 // [iq]
 
