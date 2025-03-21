@@ -27,6 +27,8 @@ public:
      */
     void updateAll();
 
+    void setMultiJointAngles(std::vector<float> joint_angles, std::vector<float> joint_speeds);
+
 private:
     std::vector<Motor> m_motors;
 };

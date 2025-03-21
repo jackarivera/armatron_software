@@ -304,6 +304,10 @@ void RealTimeDaemon::handleCommand(const std::string& jsonStr)
             int angle = root.get("angle", 0).asInt();
             int maxSpeed = root.get("maxSpeed", 0).asInt();
             mot.setSingleAngleWithSpeed(static_cast<uint8_t>(spin), static_cast<int32_t>(angle), static_cast<uint16_t>(maxSpeed));
+        } else if (cmd == "setMultiJointAngles") {
+            std::vector<float> angles = {0}; 
+            std::vector<float> speeds = {0};
+            m_robot.setMultiJointAngles(angles, speeds);
         } else if (cmd == "setIncrementAngle") {
             int value = root.get("incAngle", 0).asInt();
             mot.setIncrementAngle(static_cast<int32_t>(value));

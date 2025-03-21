@@ -37,3 +37,18 @@ void RobotInterface::updateAll()
         m.readSingleAngle();
     }
 }
+
+// Sets joint angles for motors 1 through n - input angles in radians (they are converted to raw units after)
+void RobotInterface::setMultiJointAngles(std::vector<float> joint_angles, std::vector<float> joint_speeds) {
+    for (int i = 1; i <= joint_angles.size(); i++){
+        float ang_target_rad = joint_angles.at(i-1);
+        if (ang_target_rad >= 0.0) {
+            auto &curr_mot = m_motors[i-1];
+            float ang_target_raw = curr_mot.motorRadiansToRaw(joint_angles.at(i-1));
+            float ang_curr_raw = curr_mot.getState().positionDeg;
+            float maxSpeed = joint_speeds.at(i-1);
+            int spinDir = (ang_target_raw - ang_curr_raw) < 0 ? 1 : 0;
+            m_motors[i-1].setSingleAngleWithSpeed(static_cast<uint8_t>(spinDir), static_cast<int32_t>(ang_target_raw), static_cast<uint16_t>(maxSpeed));
+        }
+    }
+}
