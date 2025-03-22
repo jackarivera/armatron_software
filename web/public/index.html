@@ -93,17 +93,23 @@
               <div>Temperature: <span class="temp">--</span></div>
               <div>Torque: <span class="torque">--</span></div>
               <div>Speed: <span class="speed">--</span></div>
-              <div>Position: <span class="position">--</span></div>
               <div>Encoder: <span class="enc">--</span></div>
               <div>Error: <span class="error">--</span></div>
-              <div>Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
-              <div>Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Single Turn] Raw Angle: <span class="position">--</span></div>
+              <div>[Single Turn] Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
+              <div>[Single Turn] Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Multi Turn] Raw Angle: <span class="position_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [rad]: <span class="pos_remapped_rad_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [deg]: <span class="pos_remapped_deg_multi">--</span></div>
             </div>
             <div class="local-controls">
               <button onclick="sendLocalCmd({cmd:'motorOn', motorID:1})">Motor ON</button>
               <button onclick="sendLocalCmd({cmd:'motorOff', motorID:1})">Motor OFF</button>
               <button onclick="sendLocalCmd({cmd:'motorStop', motorID:1})">Motor STOP</button>
               <button onclick="sendLocalCmd({cmd:'clearMotorError', motorID:1})">Clear Error</button>
+              <button onclick="sendLocalCmd({cmd:'syncSingleAndMulti', motorID:1})">Sync Angles</button>
               <div>
                 <label>Torque (raw):</label>
                 <input type="number" id="torqueVal-1" value="50"/>
@@ -135,17 +141,23 @@
               <div>Temperature: <span class="temp">--</span></div>
               <div>Torque: <span class="torque">--</span></div>
               <div>Speed: <span class="speed">--</span></div>
-              <div>Position: <span class="position">--</span></div>
               <div>Encoder: <span class="enc">--</span></div>
               <div>Error: <span class="error">--</span></div>
-              <div>Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
-              <div>Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Single Turn] Raw Angle: <span class="position">--</span></div>
+              <div>[Single Turn] Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
+              <div>[Single Turn] Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Multi Turn] Raw Angle: <span class="position_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [rad]: <span class="pos_remapped_rad_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [deg]: <span class="pos_remapped_deg_multi">--</span></div>
             </div>
             <div class="local-controls">
               <button onclick="sendLocalCmd({cmd:'motorOn', motorID:2})">Motor ON</button>
               <button onclick="sendLocalCmd({cmd:'motorOff', motorID:2})">Motor OFF</button>
               <button onclick="sendLocalCmd({cmd:'motorStop', motorID:2})">Motor STOP</button>
               <button onclick="sendLocalCmd({cmd:'clearMotorError', motorID:2})">Clear Error</button>
+              <button onclick="sendLocalCmd({cmd:'syncSingleAndMulti', motorID:2})">Sync Angles</button>
               <div>
                 <label>Torque (raw):</label>
                 <input type="number" id="torqueVal-2" value="50"/>
@@ -177,17 +189,23 @@
               <div>Temperature: <span class="temp">--</span></div>
               <div>Torque: <span class="torque">--</span></div>
               <div>Speed: <span class="speed">--</span></div>
-              <div>Position: <span class="position">--</span></div>
               <div>Encoder: <span class="enc">--</span></div>
               <div>Error: <span class="error">--</span></div>
-              <div>Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
-              <div>Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Single Turn] Raw Angle: <span class="position">--</span></div>
+              <div>[Single Turn] Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
+              <div>[Single Turn] Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Multi Turn] Raw Angle: <span class="position_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [rad]: <span class="pos_remapped_rad_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [deg]: <span class="pos_remapped_deg_multi">--</span></div>
             </div>
             <div class="local-controls">
               <button onclick="sendLocalCmd({cmd:'motorOn', motorID:3})">Motor ON</button>
               <button onclick="sendLocalCmd({cmd:'motorOff', motorID:3})">Motor OFF</button>
               <button onclick="sendLocalCmd({cmd:'motorStop', motorID:3})">Motor STOP</button>
               <button onclick="sendLocalCmd({cmd:'clearMotorError', motorID:3})">Clear Error</button>
+              <button onclick="sendLocalCmd({cmd:'syncSingleAndMulti', motorID:3})">Sync Angles</button>
               <div>
                 <label>Torque (raw):</label>
                 <input type="number" id="torqueVal-3" value="50"/>
@@ -219,17 +237,23 @@
               <div>Temperature: <span class="temp">--</span></div>
               <div>Torque: <span class="torque">--</span></div>
               <div>Speed: <span class="speed">--</span></div>
-              <div>Position: <span class="position">--</span></div>
               <div>Encoder: <span class="enc">--</span></div>
               <div>Error: <span class="error">--</span></div>
-              <div>Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
-              <div>Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Single Turn] Raw Angle: <span class="position">--</span></div>
+              <div>[Single Turn] Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
+              <div>[Single Turn] Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Multi Turn] Raw Angle: <span class="position_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [rad]: <span class="pos_remapped_rad_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [deg]: <span class="pos_remapped_deg_multi">--</span></div>
             </div>
             <div class="local-controls">
               <button onclick="sendLocalCmd({cmd:'motorOn', motorID:4})">Motor ON</button>
               <button onclick="sendLocalCmd({cmd:'motorOff', motorID:4})">Motor OFF</button>
               <button onclick="sendLocalCmd({cmd:'motorStop', motorID:4})">Motor STOP</button>
               <button onclick="sendLocalCmd({cmd:'clearMotorError', motorID:4})">Clear Error</button>
+              <button onclick="sendLocalCmd({cmd:'syncSingleAndMulti', motorID:4})">Sync Angles</button>
               <div>
                 <label>Torque (raw):</label>
                 <input type="number" id="torqueVal-4" value="50"/>
@@ -261,17 +285,23 @@
               <div>Temperature: <span class="temp">--</span></div>
               <div>Torque: <span class="torque">--</span></div>
               <div>Speed: <span class="speed">--</span></div>
-              <div>Position: <span class="position">--</span></div>
               <div>Encoder: <span class="enc">--</span></div>
               <div>Error: <span class="error">--</span></div>
-              <div>Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
-              <div>Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Single Turn] Raw Angle: <span class="position">--</span></div>
+              <div>[Single Turn] Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
+              <div>[Single Turn] Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Multi Turn] Raw Angle: <span class="position_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [rad]: <span class="pos_remapped_rad_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [deg]: <span class="pos_remapped_deg_multi">--</span></div>
             </div>
             <div class="local-controls">
               <button onclick="sendLocalCmd({cmd:'motorOn', motorID:5})">Motor ON</button>
               <button onclick="sendLocalCmd({cmd:'motorOff', motorID:5})">Motor OFF</button>
               <button onclick="sendLocalCmd({cmd:'motorStop', motorID:5})">Motor STOP</button>
               <button onclick="sendLocalCmd({cmd:'clearMotorError', motorID:5})">Clear Error</button>
+              <button onclick="sendLocalCmd({cmd:'syncSingleAndMulti', motorID:5})">Sync Angles</button>
               <div>
                 <label>Torque (raw):</label>
                 <input type="number" id="torqueVal-5" value="50"/>
@@ -303,17 +333,23 @@
               <div>Temperature: <span class="temp">--</span></div>
               <div>Torque: <span class="torque">--</span></div>
               <div>Speed: <span class="speed">--</span></div>
-              <div>Position: <span class="position">--</span></div>
               <div>Encoder: <span class="enc">--</span></div>
               <div>Error: <span class="error">--</span></div>
-              <div>Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
-              <div>Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Single Turn] Raw Angle: <span class="position">--</span></div>
+              <div>[Single Turn] Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
+              <div>[Single Turn] Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Multi Turn] Raw Angle: <span class="position_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [rad]: <span class="pos_remapped_rad_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [deg]: <span class="pos_remapped_deg_multi">--</span></div>
             </div>
             <div class="local-controls">
               <button onclick="sendLocalCmd({cmd:'motorOn', motorID:6})">Motor ON</button>
               <button onclick="sendLocalCmd({cmd:'motorOff', motorID:6})">Motor OFF</button>
               <button onclick="sendLocalCmd({cmd:'motorStop', motorID:6})">Motor STOP</button>
               <button onclick="sendLocalCmd({cmd:'clearMotorError', motorID:6})">Clear Error</button>
+              <button onclick="sendLocalCmd({cmd:'syncSingleAndMulti', motorID:6})">Sync Angles</button>
               <div>
                 <label>Torque (raw):</label>
                 <input type="number" id="torqueVal-6" value="50"/>
@@ -345,17 +381,23 @@
               <div>Temperature: <span class="temp">--</span></div>
               <div>Torque: <span class="torque">--</span></div>
               <div>Speed: <span class="speed">--</span></div>
-              <div>Position: <span class="position">--</span></div>
               <div>Encoder: <span class="enc">--</span></div>
               <div>Error: <span class="error">--</span></div>
-              <div>Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
-              <div>Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Single Turn] Raw Angle: <span class="position">--</span></div>
+              <div>[Single Turn] Remapped Angle [rad]: <span class="pos_remapped_rad">--</span></div>
+              <div>[Single Turn] Remapped Angle [deg]: <span class="pos_remapped_deg">--</span></div>
+              <br>
+              <div>[Multi Turn] Raw Angle: <span class="position_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [rad]: <span class="pos_remapped_rad_multi">--</span></div>
+              <div>[Multi Turn] Remapped Angle [deg]: <span class="pos_remapped_deg_multi">--</span></div>
             </div>
             <div class="local-controls">
               <button onclick="sendLocalCmd({cmd:'motorOn', motorID:7})">Motor ON</button>
               <button onclick="sendLocalCmd({cmd:'motorOff', motorID:7})">Motor OFF</button>
               <button onclick="sendLocalCmd({cmd:'motorStop', motorID:7})">Motor STOP</button>
               <button onclick="sendLocalCmd({cmd:'clearMotorError', motorID:7})">Clear Error</button>
+              <button onclick="sendLocalCmd({cmd:'syncSingleAndMulti', motorID:7})">Sync Angles</button>
               <div>
                 <label>Torque (raw):</label>
                 <input type="number" id="torqueVal-7" value="50"/>
@@ -535,11 +577,9 @@
     function applyLocalPosition(jointId) {
       let pos_val = parseInt(document.getElementById('posVal-' + jointId).value);
       let speed_val = parseInt(document.getElementById('posSpeedVal-' + jointId).value);
-      let spin_dir = parseInt(document.getElementById('posSpinDir-' + jointId).value);
       sendLocalCmd({
-        cmd:'setSingleAngleWithSpeed',
+        cmd:'setMultiAngleWithSpeed',
         motorID: jointId,
-        spinDirection: spin_dir,
         angle: pos_val,
         maxSpeed: speed_val
       });
@@ -608,12 +648,15 @@
           card.querySelector(".error").innerText = (motor.error && motor.error != 0) ? 'YES' : 'NO';
           card.querySelector(".pos_remapped_rad").innerText = (motor.positionRad_Mapped ? motor.positionRad_Mapped.toFixed(6) : '--');
           card.querySelector(".pos_remapped_deg").innerText = (motor.positionDeg_Mapped ? motor.positionDeg_Mapped.toFixed(6) : '--');
-          
+          card.querySelector(".position_multi").innerText = motor.multiTurnRaw.toFixed(6);
+          card.querySelector(".pos_remapped_rad_multi").innerText = (motor.multiTurnRad_Mapped ? motor.multiTurnRad_Mapped.toFixed(6) : '--');
+          card.querySelector(".pos_remapped_deg_multi").innerText = (motor.multiTurnDeg_Mapped ? motor.multiTurnDeg_Mapped.toFixed(6) : '--');
+
           // Update the chart for this joint
           let chart = charts[i];
           let now = new Date().toLocaleTimeString();
           chart.data.labels.push(now);
-          chart.data.datasets[0].data.push(motor.posDeg / 10);
+          chart.data.datasets[0].data.push(motor.posDeg);
           chart.data.datasets[1].data.push(motor.speedDeg_s);
           chart.data.datasets[2].data.push(lastCommandValue !== null ? lastCommandValue : null);
           chart.data.datasets[3].data.push(motor.torqueA);

@@ -36,6 +36,7 @@ void RobotInterface::updateAll()
         // For demonstration, let's do readState2
         m.readState2();
         m.readSingleAngle();
+        m.readMultiAngle();
     }
 }
 
@@ -50,7 +51,7 @@ void RobotInterface::setMultiJointAngles(std::vector<float> joint_angles, std::v
             float ang_curr_raw = curr_mot.getState().positionDeg;
             float maxSpeed = joint_speeds.at(i-1);
             int spinDir = (ang_target_raw - ang_curr_raw) < 0 ? 1 : 0;
-            m_motors[i-1].setSingleAngleWithSpeed(static_cast<uint8_t>(spinDir), static_cast<int32_t>(ang_target_raw), static_cast<uint16_t>(maxSpeed));
+            m_motors[i-1].setMultiAngleWithSpeed(static_cast<int32_t>(ang_target_raw), static_cast<uint16_t>(maxSpeed));
             std::cout << "                 Target Angle Raw: " << ang_target_raw << "\n";
             std::cout << "                 Current Angle Raw: " << ang_curr_raw << "\n";
             std::cout << "                 MaxSpeed: " << maxSpeed << "\n";

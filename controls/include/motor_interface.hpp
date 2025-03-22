@@ -16,9 +16,12 @@ struct MotorState
     double busVoltage      = 0.0;
     double torqueCurrentA  = 0.0; ///< Actual current (like IQ)
     double speedDeg_s      = 0.0; ///< Speed in deg/s
-    double positionDeg     = 0.0; ///< Single or multi-turn angle in degrees
+    double positionDeg     = 0.0; ///< Single Turn Angle in raw units
+    double multiTurnPosition = 0.0; // Multi Turn Angle in raw units
     double positionRad_Mapped = 0.0;
     double positionDeg_Mapped = 0.0;
+    double multiTurnRad_Mapped = 0.0;
+    double multiTurnDeg_Mapped = 0.0;
     double encoderVal      = 0.0;
     bool   errorPresent    = false;
     uint8_t errorCode      = 0;
@@ -114,6 +117,11 @@ public:
      * @brief Increment angle control 2 (0xA8). incAngle + maxSpeed
      */
     void setIncrementAngleWithSpeed(int32_t incAngle, uint16_t maxSpeed);
+
+    /**
+     * @brief Clears the multi turn angle loops. May work? Its not documented in CAN docs but is in RS485
+     */
+    void clearMultiLoopAngle();
 
     /**
      * @brief Read PID (0x30). Returns array of 6 param bytes: [AngKp,AngKi,SpdKp,SpdKi,TrqKp,TrqKi]

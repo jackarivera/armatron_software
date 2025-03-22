@@ -228,6 +228,9 @@ void RealTimeDaemon::controlThreadFunc()
                 mjs["torqueA"]    = st.torqueCurrentA;
                 mjs["speedDeg_s"] = st.speedDeg_s;
                 mjs["posDeg"]     = st.positionDeg;
+                mjs["multiTurnRaw"] = st.multiTurnPosition;
+                mjs["multiTurnRad_Mapped"] = st.multiTurnRad_Mapped;
+                mjs["multiTurnDeg_Mapped"] = st.multiTurnDeg_Mapped;
                 mjs["error"]      = (st.errorPresent ? 1 : 0);
                 mjs["encoder_val"] = st.encoderVal;
                 mjs["positionRad_Mapped"] = st.positionRad_Mapped;
@@ -329,6 +332,8 @@ void RealTimeDaemon::handleCommand(const std::string& jsonStr)
             int incAngle = root.get("incAngle", 0).asInt();
             int maxSpeed = root.get("maxSpeed", 0).asInt();
             mot.setIncrementAngleWithSpeed(static_cast<int32_t>(incAngle), static_cast<uint16_t>(maxSpeed));
+        } else if (cmd == "syncSingleAndMulti"){
+            mot.clearMultiLoopAngle();
         } else if (cmd == "readPID") {
             auto pid = mot.readPID();
             // Optionally, you can send the PID values back to the client.

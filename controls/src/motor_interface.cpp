@@ -41,6 +41,20 @@ namespace
             f.data[loIdx]
         );
     }
+    inline int64_t unpack64(const struct can_frame& f, int loIdx)
+    {
+        return static_cast<int64_t>(
+            (static_cast<int64_t>(f.data[loIdx + 7]) << 56) |
+            (static_cast<int64_t>(f.data[loIdx + 6]) << 48) |
+            (static_cast<int64_t>(f.data[loIdx + 5]) << 40) |
+            (static_cast<int64_t>(f.data[loIdx + 4]) << 32) |
+            (static_cast<int64_t>(f.data[loIdx + 3]) << 24) |
+            (static_cast<int64_t>(f.data[loIdx + 2]) << 16) |
+            (static_cast<int64_t>(f.data[loIdx + 1]) <<  8) |
+                static_cast<int64_t>(f.data[loIdx])
+        );
+    }
+
 
     // Define a constant for 2*pi
     const double TWO_PI = 2.0 * M_PI;
@@ -128,8 +142,9 @@ void Motor::setMultiAngle(int32_t angleControl)
 {
     // 0xA3 => multi angle (1 frame)
     // data => [0x00,0x00,0x00, angle0, angle1, angle2, angle3, 0x00]
+    int32_t scaled_angle = angleControl * 1000; // Scale to motor expectation
     std::vector<uint8_t> d(8, 0);
-    pack32(d, 3, angleControl);
+    pack32(d, 3, scaled_angle);
 
     sendCmd(0xA3, d);
     readFrameForCommand(0xA3);
@@ -139,10 +154,11 @@ void Motor::setMultiAngleWithSpeed(int32_t angle, uint16_t maxSpeed)
 {
     // 0xA4 => angle + speed
     // data => [0x00, spdLo, spdHi, angle0, angle1, angle2, angle3]
+    int32_t scaled_angle = angle * 1000; // Scale to motor expectation
     std::vector<uint8_t> d(7, 0);
     d[1] = static_cast<uint8_t>( maxSpeed & 0xFF );
     d[2] = static_cast<uint8_t>((maxSpeed >> 8) & 0xFF );
-    pack32(d, 3, angle);
+    pack32(d, 3, scaled_angle);
 
     sendCmd(0xA4, d);
     readFrameForCommand(0xA4);
@@ -151,6 +167,7 @@ void Motor::setMultiAngleWithSpeed(int32_t angle, uint16_t maxSpeed)
 void Motor::setSingleAngle(uint8_t spinDirection, int32_t angle)
 {
     // 0xA5 => single angle, data => [dir,0,0, angLo,angHi,angHi2,angHi3]
+    int32_t scaled_angle = angle * 1000; // Scale to motor expectation
     std::vector<uint8_t> d(7, 0);
     d[0] = spinDirection;
     pack32(d, 3, angle);
@@ -195,6 +212,10 @@ void Motor::setIncrementAngleWithSpeed(int32_t incAngle, uint16_t maxSpeed)
 
     sendCmd(0xA8, d);
     readFrameForCommand(0xA8);
+}
+
+void Motor::clearMultiLoopAngle(){
+    sendCmd(0x93);
 }
 
 std::vector<uint8_t> Motor::readPID()
@@ -497,13 +518,13 @@ void Motor::readFrameForCommand(uint8_t expectedCmd)
             case 0x92:
             {
                 // Read multi-turn angle response.
-                // Assume response: [0x92, 0, 0, ang0, ang1, ang2, ang3, 0]
+                // Assume response: [0x92, angLo 1, ang2, ang3, ang4, ang5, ang6, angHi7]
                 if (frame.can_dlc >= 8) {
-                    int32_t angle = unpack32(frame, 4);
+                    int32_t angle = unpack64(frame, 1);
                     // Assume angle is in 0.01 degrees per LSB.
-                    m_state.positionDeg = angle * 0.001;
-                    //m_state.positionRad_Mapped = motorRawToRadians(m_state.positionDeg);
-                    //m_state.positionDeg_Mapped = radiansToDegrees(m_state.positionRad_Mapped);
+                    m_state.multiTurnPosition = angle * 0.001;
+                    m_state.multiTurnRad_Mapped = motorRawToRadians(m_state.multiTurnPosition);
+                    m_state.multiTurnDeg_Mapped = radiansToDegrees(m_state.multiTurnRad_Mapped);
                 }
                 break;
             }
