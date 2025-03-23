@@ -610,11 +610,11 @@
     
     function writeEncoderZero() {
       let val = parseInt(document.getElementById('encoderVal').value);
-      sendGlobalCmd({cmd:'writeEncoderZero', motorID: getGlobalSelectedJoint(), encoderValue: val});
+      sendGlobalCmd({cmd:'writeEncoderOffset', motorID: getGlobalSelectedJoint(), encoderValue: val});
     }
     
     function writeCurrentPosZero() {
-      sendGlobalCmd({cmd:'writeCurrentPosZero', motorID: getGlobalSelectedJoint()});
+      sendGlobalCmd({cmd:'writeCurrentPosAsZero', motorID: getGlobalSelectedJoint()});
     }
     
     function writeAcceleration() {
